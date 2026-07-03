@@ -1,0 +1,29 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "festival-demo",
+  // Unified entrypoint provided by @astrojs/cloudflare (v13+): the same
+  // entry serves `astro dev` (workerd) and the deployed Worker.
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_date": "2026-06-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  // Static assets built by Astro (CSS, images). The Worker handles everything else.
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist"
+  },
+  // Primary data store. Locally this is a plain SQLite file under
+  // .wrangler/state/v3/d1 (used by both `astro dev` and `wrangler dev`).
+  // In production it is a Cloudflare D1 database -- see Cloudflare.md for
+  // how to create one and fill in database_id.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "festival-db",
+      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID",
+      "migrations_dir": "migrations"
+    }
+  ]
+}

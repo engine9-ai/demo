@@ -1,0 +1,127 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { getDB, type Artist, type Performance } from "../../lib/db";
+
+const db = getDB();
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const action = form.get("_action");
+
+  if (action === "add") {
+    await db
+      .prepare(
+        `INSERT INTO performance (artist_id, day, stage, start_time, end_time, vip_only)
+         VALUES (?, ?, ?, ?, ?, ?)`
+      )
+      .bind(
+        Number(form.get("artist_id")),
+        String(form.get("day")),
+        String(form.get("stage")),
+        String(form.get("start_time")),
+        String(form.get("end_time")),
+        form.get("vip_only") ? 1 : 0
+      )
+      .run();
+  } else if (action === "delete") {
+    await db.prepare("DELETE FROM performance WHERE id = ?").bind(Number(form.get("id"))).run();
+  }
+
+  return Astro.redirect("/admin/schedule", 303);
+}
+
+const { results: artists } = await db
+  .prepare("SELECT * FROM artist ORDER BY name")
+  .all<Artist>();
+const { results: sets } = await db
+  .prepare(
+    `SELECT p.*, a.name AS artist_name, a.emoji
+     FROM performance p JOIN artist a ON a.id = p.artist_id
+     ORDER BY CASE p.day WHEN 'Saturday' THEN 0 ELSE 1 END, p.start_time`
+  )
+  .all<Performance>();
+---
+
+<Layout title="Admin · Schedule">
+  <p><a href="/admin">← Admin</a></p>
+  <h1>Schedule</h1>
+  <p class="muted">Sets flagged VIP never appear on the public schedule page.</p>
+
+  <div class="card" style="padding: 0.5rem 1rem; margin-bottom: 2rem;">
+    <table>
+      <thead>
+        <tr><th>Day</th><th>Time</th><th>Artist</th><th>Stage</th><th>Access</th><th></th></tr>
+      </thead>
+      <tbody>
+        {sets.map((s) => (
+          <tr>
+            <td>{s.day}</td>
+            <td class="time">{s.start_time}–{s.end_time}</td>
+            <td>{s.emoji} <strong>{s.artist_name}</strong></td>
+            <td class="muted">{s.stage}</td>
+            <td>{s.vip_only ? <span class="badge vip">VIP</span> : <span class="muted">Public</span>}</td>
+            <td style="text-align: right;">
+              <form method="post">
+                <input type="hidden" name="_action" value="delete" />
+                <input type="hidden" name="id" value={s.id} />
+                <button class="btn btn-danger" type="submit">Remove</button>
+              </form>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Add a set</h2>
+  <form method="post" class="card">
+    <input type="hidden" name="_action" value="add" />
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="artist_id">Artist</label>
+        <select id="artist_id" name="artist_id" required>
+          {artists.map((a) => <option value={a.id}>{a.emoji} {a.name}</option>)}
+        </select>
+      </div>
+      <div class="field">
+        <label for="day">Day</label>
+        <select id="day" name="day">
+          <option>Saturday</option>
+          <option>Sunday</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="stage">Stage</label>
+        <select id="stage" name="stage">
+          <option>Main Stage</option>
+          <option>Lagoon Stage</option>
+          <option>VIP Lounge</option>
+        </select>
+      </div>
+      <div class="field" style="display: flex; gap: 1rem;">
+        <div style="flex: 1;">
+          <label for="start_time">Start</label>
+          <input id="start_time" name="start_time" type="time" required />
+        </div>
+        <div style="flex: 1;">
+          <label for="end_time">End</label>
+          <input id="end_time" name="end_time" type="time" required />
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label style="display: flex; align-items: center; gap: 0.5rem;">
+        <input type="checkbox" name="vip_only" value="1" style="width: auto;" />
+        VIP-only session (hidden from the public schedule)
+      </label>
+    </div>
+    <button class="btn btn-primary" type="submit">Add set</button>
+  </form>
+</Layout>
+
+<style>
+  td form { margin: 0; }
+  .time { font-variant-numeric: tabular-nums; white-space: nowrap; }
+</style>

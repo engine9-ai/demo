@@ -1,0 +1,109 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { getDB, formatPrice, type Performance, type Person } from "../../lib/db";
+
+// Middleware guarantees a VIP or Admin session before this page renders;
+// logged-out visitors were already redirected to /login.
+const session = Astro.locals.session!;
+const db = getDB();
+
+// All per-person data is keyed by the integer person_id.
+const person = await db
+  .prepare("SELECT * FROM person WHERE person_id = ?")
+  .bind(session.personId)
+  .first<Person>();
+
+const ticket = await db
+  .prepare(
+    `SELECT tt.name, tt.price_cents, t.purchased_at
+     FROM ticket t JOIN ticket_type tt ON tt.id = t.ticket_type_id
+     WHERE t.person_id = ?
+     ORDER BY t.purchased_at DESC LIMIT 1`
+  )
+  .bind(session.personId)
+  .first<{ name: string; price_cents: number; purchased_at: string }>();
+
+const { results: vipSets } = await db
+  .prepare(
+    `SELECT p.*, a.name AS artist_name, a.emoji, a.color
+     FROM performance p JOIN artist a ON a.id = p.artist_id
+     WHERE p.vip_only = 1
+     ORDER BY CASE p.day WHEN 'Saturday' THEN 0 ELSE 1 END, p.start_time`
+  )
+  .all<Performance>();
+---
+
+<Layout title="VIP Lounge">
+  <p class="kicker">VIP only · gated server-side</p>
+  <h1>Welcome to the <span class="gradient-text">VIP Lounge</span>{person && `, ${person.name.split(" ")[0]}`}</h1>
+  <p class="muted">
+    Everything on this page is invisible to general admission — the VIP-only
+    sets below aren't even included in the public schedule query.
+  </p>
+
+  <div class="grid grid-2" style="margin-top: 1.5rem;">
+    <div class="card">
+      <h2 style="margin-top: 0;">Your details</h2>
+      {person ? (
+        <table>
+          <tbody>
+            <tr><th>person_id</th><td>{person.person_id}</td></tr>
+            <tr><th>Name</th><td>{person.name}</td></tr>
+            <tr><th>Email</th><td>{person.email}</td></tr>
+            <tr><th>Address</th><td>{person.address}</td></tr>
+          </tbody>
+        </table>
+      ) : (
+        <p class="muted">No person record found for person_id {session.personId}.</p>
+      )}
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top: 0;">Your ticket</h2>
+      {ticket ? (
+        <>
+          <p class="ticket-name">🎫 {ticket.name}</p>
+          <p class="muted">
+            Purchased {ticket.purchased_at} · {formatPrice(ticket.price_cents)}
+          </p>
+          <p class="muted">Show this page at the VIP gate on the east pier.</p>
+        </>
+      ) : (
+        <p class="muted">No ticket on file.</p>
+      )}
+    </div>
+  </div>
+
+  <h2>VIP-only sessions</h2>
+  <p class="muted">Intimate soundchecks and meet-and-greets in the VIP Lounge. Capacity 80.</p>
+  <div class="card" style="padding: 0.5rem 1rem;">
+    <table>
+      <thead>
+        <tr><th>Day</th><th>Time</th><th>Artist</th></tr>
+      </thead>
+      <tbody>
+        {vipSets.map((s) => (
+          <tr>
+            <td>{s.day}</td>
+            <td class="time">{s.start_time}–{s.end_time}</td>
+            <td><span style={`color: ${s.color}`}>{s.emoji}</span> <strong>{s.artist_name}</strong></td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</Layout>
+
+<style>
+  .kicker {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.85rem;
+    color: var(--vip);
+    margin: 0 0 0.5rem;
+  }
+  .ticket-name { font-size: 1.3rem; font-weight: 800; margin: 0 0 0.25rem; }
+  .time { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table th { width: 7rem; }
+</style>

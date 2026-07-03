@@ -1,0 +1,67 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { DEMO_USERS } from "../lib/session";
+
+const required = Astro.url.searchParams.get("required");
+const session = Astro.locals.session;
+---
+
+<Layout title="Log in">
+  <div class="login-wrap">
+    <div class="card login-card">
+      <h1>Log in</h1>
+
+      {required && (
+        <p class="notice">
+          That page requires <strong>{required.toUpperCase()}</strong> access.
+          Log in below to continue.
+        </p>
+      )}
+
+      <p class="muted">
+        In production, this site hands authentication off to the shared
+        <strong>delegate</strong> service, which verifies your identity and
+        returns your <code>person_id</code> and access level. For this demo,
+        just pick who to be:
+      </p>
+
+      <div class="buttons">
+        <form method="post" action="/auth/login">
+          <input type="hidden" name="role" value="vip" />
+          <button class="btn btn-primary" type="submit">Login as VIP</button>
+          <p class="who">{DEMO_USERS.vip.label} · person_id {DEMO_USERS.vip.personId}</p>
+        </form>
+
+        <form method="post" action="/auth/login">
+          <input type="hidden" name="role" value="admin" />
+          <button class="btn btn-primary admin" type="submit">Login as Admin</button>
+          <p class="who">{DEMO_USERS.admin.label} · person_id {DEMO_USERS.admin.personId}</p>
+        </form>
+      </div>
+
+      {session && (
+        <p class="muted" style="margin-top: 1.5rem;">
+          You're currently logged in as <strong>{session.role.toUpperCase()}</strong>
+          (person_id {session.personId}). Logging in again switches identity.
+        </p>
+      )}
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .login-wrap { display: flex; justify-content: center; padding-top: 2rem; }
+  .login-card { max-width: 30rem; }
+  .notice {
+    background: rgba(244, 114, 182, 0.12);
+    border: 1px solid rgba(244, 114, 182, 0.4);
+    border-radius: 8px;
+    padding: 0.6rem 0.9rem;
+  }
+  .buttons { display: grid; gap: 1rem; margin-top: 1.5rem; }
+  .buttons form { margin: 0; }
+  .buttons .btn { width: 100%; }
+  .btn.admin { background: linear-gradient(120deg, #10b981, #34d399); }
+  .who { font-size: 0.8rem; color: var(--muted); margin: 0.4rem 0 0; text-align: center; }
+  code { background: var(--surface-2); padding: 0.1rem 0.35rem; border-radius: 4px; }
+</style>

@@ -1,0 +1,17 @@
+# build output
+dist/
+.astro/
+
+# dependencies
+node_modules/
+
+# wrangler local state (contains the local SQLite database)
+.wrangler/
+
+# environment
+.env
+.env.*
+!.env.example
+
+# misc
+.DS_Store

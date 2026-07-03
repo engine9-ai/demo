@@ -1,0 +1,36 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { getDB, type Artist } from "../lib/db";
+
+const db = getDB();
+const { results: artists } = await db
+  .prepare("SELECT * FROM artist ORDER BY name")
+  .all<Artist>();
+---
+
+<Layout title="Lineup">
+  <h1>The <span class="gradient-text">Lineup</span></h1>
+  <p class="muted">Five acts, hand-picked for a weekend on the water.</p>
+
+  <div class="grid grid-2" style="margin-top: 1.5rem;">
+    {artists.map((a) => (
+      <div class="card" style={`border-left: 4px solid ${a.color}`}>
+        <div class="head">
+          <span class="emoji">{a.emoji}</span>
+          <div>
+            <h3>{a.name}</h3>
+            <p class="genre" style={`color: ${a.color}`}>{a.genre}</p>
+          </div>
+        </div>
+        <p class="muted">{a.blurb}</p>
+      </div>
+    ))}
+  </div>
+</Layout>
+
+<style>
+  .head { display: flex; gap: 0.9rem; align-items: center; margin-bottom: 0.5rem; }
+  .emoji { font-size: 2.2rem; }
+  .head h3 { margin: 0; }
+  .genre { margin: 0.1rem 0 0; font-weight: 700; font-size: 0.85rem; }
+</style>

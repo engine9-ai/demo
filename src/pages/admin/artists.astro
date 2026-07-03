@@ -1,0 +1,102 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { getDB, type Artist } from "../../lib/db";
+
+const db = getDB();
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const action = form.get("_action");
+
+  if (action === "add") {
+    await db
+      .prepare("INSERT INTO artist (name, genre, blurb, emoji, color) VALUES (?, ?, ?, ?, ?)")
+      .bind(
+        String(form.get("name") ?? "").trim(),
+        String(form.get("genre") ?? "").trim(),
+        String(form.get("blurb") ?? "").trim(),
+        String(form.get("emoji") ?? "🎤").trim() || "🎤",
+        String(form.get("color") ?? "#a855f7")
+      )
+      .run();
+  } else if (action === "delete") {
+    // ON DELETE CASCADE removes the artist's performances too.
+    await db.prepare("DELETE FROM artist WHERE id = ?").bind(Number(form.get("id"))).run();
+  }
+
+  // Redirect after POST so refresh doesn't resubmit.
+  return Astro.redirect("/admin/artists", 303);
+}
+
+const { results: artists } = await db
+  .prepare(
+    `SELECT a.*, COUNT(p.id) AS set_count
+     FROM artist a LEFT JOIN performance p ON p.artist_id = a.id
+     GROUP BY a.id ORDER BY a.name`
+  )
+  .all<Artist & { set_count: number }>();
+---
+
+<Layout title="Admin · Artists">
+  <p><a href="/admin">← Admin</a></p>
+  <h1>Artists</h1>
+
+  <div class="card" style="padding: 0.5rem 1rem; margin-bottom: 2rem;">
+    <table>
+      <thead>
+        <tr><th></th><th>Name</th><th>Genre</th><th>Sets</th><th></th></tr>
+      </thead>
+      <tbody>
+        {artists.map((a) => (
+          <tr>
+            <td>{a.emoji}</td>
+            <td><strong>{a.name}</strong></td>
+            <td class="muted">{a.genre}</td>
+            <td class="muted">{a.set_count}</td>
+            <td style="text-align: right;">
+              <form method="post">
+                <input type="hidden" name="_action" value="delete" />
+                <input type="hidden" name="id" value={a.id} />
+                <button class="btn btn-danger" type="submit">Remove</button>
+              </form>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Add an artist</h2>
+  <form method="post" class="card">
+    <input type="hidden" name="_action" value="add" />
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="name">Name</label>
+        <input id="name" name="name" required placeholder="Velvet Static" />
+      </div>
+      <div class="field">
+        <label for="genre">Genre</label>
+        <input id="genre" name="genre" required placeholder="Dream-pop" />
+      </div>
+    </div>
+    <div class="field">
+      <label for="blurb">Blurb</label>
+      <textarea id="blurb" name="blurb" rows="2" required placeholder="One sentence for the lineup page."></textarea>
+    </div>
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="emoji">Emoji (stands in for artist photo)</label>
+        <input id="emoji" name="emoji" placeholder="🎸" />
+      </div>
+      <div class="field">
+        <label for="color">Accent colour</label>
+        <input id="color" name="color" type="color" value="#a855f7" style="height: 2.5rem; padding: 0.2rem;" />
+      </div>
+    </div>
+    <button class="btn btn-primary" type="submit">Add artist</button>
+  </form>
+</Layout>
+
+<style>
+  td form { margin: 0; }
+</style>

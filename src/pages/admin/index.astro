@@ -1,0 +1,54 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { getDB } from "../../lib/db";
+
+// Middleware guarantees an Admin session here.
+const db = getDB();
+const counts = await db
+  .prepare(
+    `SELECT
+       (SELECT COUNT(*) FROM artist) AS artists,
+       (SELECT COUNT(*) FROM performance) AS performances,
+       (SELECT COUNT(*) FROM ticket_type) AS ticket_types,
+       (SELECT COUNT(*) FROM person) AS people`
+  )
+  .first<{ artists: number; performances: number; ticket_types: number; people: number }>();
+---
+
+<Layout title="Admin">
+  <p class="kicker">Admin only · gated server-side</p>
+  <h1>Festival <span class="gradient-text">Admin</span></h1>
+  <p class="muted">Manage the lineup, schedule, and ticket prices. Changes go straight to the database and appear on the public site immediately.</p>
+
+  <div class="grid grid-3" style="margin-top: 1.5rem;">
+    <a class="card panel" href="/admin/artists">
+      <h3>🎤 Artists</h3>
+      <p class="muted">{counts?.artists} on the bill. Add or remove acts.</p>
+    </a>
+    <a class="card panel" href="/admin/schedule">
+      <h3>🗓️ Schedule</h3>
+      <p class="muted">{counts?.performances} sets booked. Change times, stages, VIP flags.</p>
+    </a>
+    <a class="card panel" href="/admin/tickets">
+      <h3>💵 Ticket prices</h3>
+      <p class="muted">{counts?.ticket_types} tiers on sale. Set prices.</p>
+    </a>
+  </div>
+
+  <p class="muted" style="margin-top: 2rem;">{counts?.people} people in the database (keyed by person_id).</p>
+</Layout>
+
+<style>
+  .kicker {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.85rem;
+    color: var(--admin);
+    margin: 0 0 0.5rem;
+  }
+  .panel { text-decoration: none; color: var(--text); display: block; }
+  .panel:hover { border-color: var(--admin); }
+  .panel h3 { margin: 0 0 0.4rem; }
+  .panel p { margin: 0; }
+</style>

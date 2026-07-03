@@ -1,0 +1,59 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { getDB, type Performance } from "../lib/db";
+import { canAccessVip } from "../lib/session";
+
+const db = getDB();
+
+// Public page: VIP-only sets are excluded at the query level, so the data
+// never leaves the server for logged-out visitors.
+const { results: sets } = await db
+  .prepare(
+    `SELECT p.*, a.name AS artist_name, a.emoji, a.color
+     FROM performance p JOIN artist a ON a.id = p.artist_id
+     WHERE p.vip_only = 0
+     ORDER BY CASE p.day WHEN 'Saturday' THEN 0 ELSE 1 END, p.start_time`
+  )
+  .all<Performance>();
+
+const days = [...new Set(sets.map((s) => s.day))];
+const vip = canAccessVip(Astro.locals.session);
+---
+
+<Layout title="Schedule">
+  <h1>The <span class="gradient-text">Schedule</span></h1>
+  <p class="muted">
+    All public sets on the Main Stage and Lagoon Stage.
+    {vip
+      ? <span> Your VIP-only sessions are on the <a href="/vip">VIP Lounge page</a>.</span>
+      : <span> VIP ticket holders get extra lounge sessions — <a href="/login">log in</a> to see them.</span>}
+  </p>
+
+  {days.map((day) => (
+    <section>
+      <h2>{day}</h2>
+      <div class="card" style="padding: 0.5rem 1rem;">
+        <table>
+          <thead>
+            <tr><th>Time</th><th>Artist</th><th>Stage</th></tr>
+          </thead>
+          <tbody>
+            {sets
+              .filter((s) => s.day === day)
+              .map((s) => (
+                <tr>
+                  <td class="time">{s.start_time}–{s.end_time}</td>
+                  <td><span style={`color: ${s.color}`}>{s.emoji}</span> <strong>{s.artist_name}</strong></td>
+                  <td class="muted">{s.stage}</td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  ))}
+</Layout>
+
+<style>
+  .time { font-variant-numeric: tabular-nums; white-space: nowrap; }
+</style>

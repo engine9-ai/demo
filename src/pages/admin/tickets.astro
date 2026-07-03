@@ -1,0 +1,53 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { getDB, formatPrice, type TicketType } from "../../lib/db";
+
+const db = getDB();
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const id = Number(form.get("id"));
+  const dollars = Number(form.get("price"));
+
+  if (Number.isFinite(dollars) && dollars >= 0) {
+    await db
+      .prepare("UPDATE ticket_type SET price_cents = ? WHERE id = ?")
+      .bind(Math.round(dollars * 100), id)
+      .run();
+  }
+
+  return Astro.redirect("/admin/tickets", 303);
+}
+
+const { results: ticketTypes } = await db
+  .prepare("SELECT * FROM ticket_type ORDER BY price_cents")
+  .all<TicketType>();
+---
+
+<Layout title="Admin · Ticket prices">
+  <p><a href="/admin">← Admin</a></p>
+  <h1>Ticket prices</h1>
+  <p class="muted">New prices show on the public tickets page immediately.</p>
+
+  <div class="grid grid-2" style="margin-top: 1.5rem;">
+    {ticketTypes.map((t) => (
+      <form method="post" class="card">
+        <input type="hidden" name="id" value={t.id} />
+        <h3 style="margin-top: 0;">{t.name}</h3>
+        <p class="muted">{t.description}</p>
+        <div class="field">
+          <label for={`price-${t.id}`}>Price (currently {formatPrice(t.price_cents)})</label>
+          <input
+            id={`price-${t.id}`}
+            name="price"
+            type="number"
+            min="0"
+            step="0.01"
+            value={(t.price_cents / 100).toFixed(2)}
+          />
+        </div>
+        <button class="btn btn-primary" type="submit">Save price</button>
+      </form>
+    ))}
+  </div>
+</Layout>

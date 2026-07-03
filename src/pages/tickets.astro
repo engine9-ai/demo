@@ -1,0 +1,47 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { getDB, formatPrice, type TicketType } from "../lib/db";
+
+const db = getDB();
+const { results: ticketTypes } = await db
+  .prepare("SELECT * FROM ticket_type ORDER BY price_cents")
+  .all<TicketType>();
+---
+
+<Layout title="Tickets">
+  <h1><span class="gradient-text">Tickets</span></h1>
+  <p class="muted">Prices are set by festival admins and load live from the database.</p>
+
+  <div class="grid grid-2" style="margin-top: 1.5rem;">
+    {ticketTypes.map((t) => (
+      <div class:list={["card", "tier", { featured: t.code === "vip" }]}>
+        {t.code === "vip" && <div class="flag">Includes VIP Lounge</div>}
+        <h3>{t.name}</h3>
+        <p class="price">{formatPrice(t.price_cents)}<span class="muted"> / weekend</span></p>
+        <p class="muted">{t.description}</p>
+        <a class="btn btn-primary" href="/login">Buy {t.name}</a>
+      </div>
+    ))}
+  </div>
+
+  <p class="muted" style="margin-top: 2rem; font-size: 0.9rem;">
+    This is a demo — the buy buttons take you to the pretend login instead of a checkout.
+  </p>
+</Layout>
+
+<style>
+  .tier { position: relative; padding-top: 2rem; }
+  .tier.featured { border-color: var(--vip); }
+  .flag {
+    position: absolute;
+    top: -0.8rem;
+    left: 1.25rem;
+    background: linear-gradient(120deg, var(--sun), var(--accent));
+    color: #1c1230;
+    font-weight: 800;
+    font-size: 0.75rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 999px;
+  }
+  .price { font-size: 2rem; font-weight: 800; margin: 0.25rem 0 0.75rem; }
+</style>
