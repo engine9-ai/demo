@@ -7,6 +7,7 @@ interface Props {
 const { title } = Astro.props;
 const session = Astro.locals.session;
 const path = Astro.url.pathname;
+const isAdminRoute = path.startsWith("/admin");
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -24,7 +25,7 @@ const navLinks = [
     <title>{title} · Solstice Wave Festival</title>
     <meta name="description" content="Solstice Wave — two days of pop on the Crescent Bay waterfront. Demo site." />
   </head>
-  <body>
+  <body class:list={{ "admin-route": isAdminRoute }}>
     <header class="site-header">
       <a class="wordmark" href="/">SOLSTICE<span>WAVE</span></a>
       <nav>
@@ -97,6 +98,14 @@ const navLinks = [
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+  }
+
+  body.admin-route {
+    background: #000;
+  }
+
+  body.admin-route .site-header {
+    background: rgba(0, 0, 0, 0.85);
   }
 
   main { flex: 1; width: min(1060px, 92vw); margin: 0 auto; padding: 2.5rem 0 4rem; }
