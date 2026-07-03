@@ -7,13 +7,14 @@
   "compatibility_date": "2026-06-01",
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
-    "enabled": true
+    "enabled": true,
   },
   // Static assets built by Astro (CSS, images). The Worker handles everything else.
   "assets": {
     "binding": "ASSETS",
-    "directory": "./dist"
+    "directory": "./dist",
   },
+  "routes": [{ "pattern": "festival.engine9.ai", "custom_domain": true }],
   // Primary data store. Locally this is a plain SQLite file under
   // .wrangler/state/v3/d1 (used by both `astro dev` and `wrangler dev`).
   // In production it is a Cloudflare D1 database -- see Cloudflare.md for
@@ -22,8 +23,8 @@
     {
       "binding": "DB",
       "database_name": "festival-db",
-      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID",
-      "migrations_dir": "migrations"
-    }
-  ]
+      "database_id": "c7c28218-d45f-4abf-a844-be05070a9f07",
+      "migrations_dir": "../../migrations",
+    },
+  ],
 }
