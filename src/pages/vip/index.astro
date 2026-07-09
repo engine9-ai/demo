@@ -7,9 +7,20 @@ import { getDB, formatPrice, type Performance, type Person } from "../../lib/db"
 const session = Astro.locals.session!;
 const db = getDB();
 
-// All per-person data is keyed by the integer person_id.
+// All per-person data is keyed by the integer person_id (engine9 person.id).
+// The person/person_email/person_address tables are the standard Engine9
+// interface tables managed by @engine9/client.
 const person = await db
-  .prepare("SELECT * FROM person WHERE person_id = ?")
+  .prepare(
+    `SELECT p.id AS person_id,
+            trim(p.given_name || ' ' || p.family_name) AS name,
+            pe.email,
+            pa.street_1 AS address
+     FROM person p
+     LEFT JOIN person_email pe ON pe.person_id = p.id
+     LEFT JOIN person_address pa ON pa.person_id = p.id
+     WHERE p.id = ?`
+  )
   .bind(session.personId)
   .first<Person>();
 

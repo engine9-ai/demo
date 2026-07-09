@@ -24,7 +24,7 @@
       "binding": "DB",
       "database_name": "festival-db",
       "database_id": "c7c28218-d45f-4abf-a844-be05070a9f07",
-      "migrations_dir": "../../migrations",
+      "migrations_dir": "migrations",
     },
   ],
 }

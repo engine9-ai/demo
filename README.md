@@ -60,6 +60,15 @@ Every page is server-rendered (`output: "server"`); there is no client-side
 gating anywhere. All per-person rows (`person`, `ticket`) are keyed by an
 integer `person_id`, matching how delegate identifies people.
 
+## Engine9 client
+
+The D1 database is also an **engine9 database**: migration
+`0003_engine9.sql` installs the standard Engine9 interface tables (`person`,
+`person_email`, `person_segment`, ...) and the site serves the
+`@engine9/client` API under `/api` — API-key-authenticated people creation,
+person-related upserts, and segment-gated content reads. See
+[ENGINE9.md](./ENGINE9.md) for the deployment stages.
+
 ## Deploying
 
 See [Cloudflare.md](./Cloudflare.md) for deploying to Cloudflare Workers with
