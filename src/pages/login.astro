@@ -7,10 +7,11 @@ const required = Astro.url.searchParams.get("required");
 const errorMessage = Astro.url.searchParams.get("message");
 const errorReason = Astro.url.searchParams.get("error");
 const errorKind = Astro.url.searchParams.get("kind");
+const continueUrl = Astro.url.searchParams.get("continue");
 const session = Astro.locals.session;
 
 // Core builds the delegate login URL; the browser comes back to
-// /auth/delegate with a one-time code.
+// /auth/delegate with a one-time code or signed bridge.
 const loginUrl = delegateAuth().loginUrl({
   returnTo: new URL("/auth/delegate", Astro.url.origin).toString(),
 });
@@ -28,7 +29,14 @@ const loginUrl = delegateAuth().loginUrl({
         </p>
       )}
 
-      {errorMessage && (
+      {continueUrl && (
+        <p class="notice config">
+          Local development needs one more browser step so Cloudflare’s bot
+          check can run on the Delegate host.
+        </p>
+      )}
+
+      {errorMessage && !continueUrl && (
         <p class={`notice error${errorKind === "configuration" ? " config" : ""}`}>
           {errorMessage}
           {errorKind === "configuration" && errorReason && (
@@ -39,18 +47,30 @@ const loginUrl = delegateAuth().loginUrl({
         </p>
       )}
 
-      <p class="muted">
-        Authentication is handled by the shared <strong>delegate</strong>
-        service. Delegate verifies who you are; this site then recognizes you
-        as a <code>person_id</code> and applies your access from its own
-        segments.
-      </p>
+      {continueUrl ? (
+        <p class="muted">
+          Your identity was verified, but this machine cannot call Delegate’s
+          server exchange directly. Finish sign-in by opening Delegate in your
+          browser:
+        </p>
+      ) : (
+        <p class="muted">
+          Authentication is handled by the shared <strong>delegate</strong>
+          service. Delegate verifies who you are; this site then recognizes you
+          as a <code>person_id</code> and applies your access from its own
+          segments.
+        </p>
+      )}
 
       <div class="buttons">
-        <a class="btn btn-primary" href={loginUrl}>Sign in with Delegate</a>
+        {continueUrl ? (
+          <a class="btn btn-primary" href={continueUrl}>Continue sign-in on Delegate</a>
+        ) : (
+          <a class="btn btn-primary" href={loginUrl}>Sign in with Delegate</a>
+        )}
       </div>
 
-      {session && (
+      {session && !continueUrl && (
         <p class="muted" style="margin-top: 1.5rem;">
           You're currently logged in as <strong>{primaryRole(session).toUpperCase()}</strong>
           (person_id {session.personId}). Signing in again re-verifies with delegate.
@@ -73,7 +93,7 @@ const loginUrl = delegateAuth().loginUrl({
     background: rgba(248, 113, 113, 0.12);
     border-color: rgba(248, 113, 113, 0.4);
   }
-  .notice.error.config {
+  .notice.error.config, .notice.config {
     background: rgba(251, 191, 36, 0.12);
     border-color: rgba(251, 191, 36, 0.45);
   }

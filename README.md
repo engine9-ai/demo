@@ -66,12 +66,16 @@ For how delegate handoff, person resolution, roles-as-segments, and signed
 sessions work, see [`@engine9/core` README — Delegate
 authentication](../core/README.md#delegate-authentication).
 
-Local development: copy `.env.example` to `.env`. **Use a local Delegate** —
-set `DELEGATE_URL=http://localhost:8787` and the same `DELEGATE_SHARED_SECRET`
-as that local Worker. Calling production `https://delegate.engine9.ai` from
-`astro dev` fails on `POST /handoff/exchange` with Cloudflare’s bot challenge
-(`status_403` / “Just a moment…”), because the exchange is a non-browser
-server request. Run `npm run dev` in `../delegate` alongside this app.
+Local development: copy `.env.example` to `.env` and set `DELEGATE_SHARED_SECRET`
+to a value accepted by production Delegate (comma-separated secrets support a
+dev entry). Point `DELEGATE_URL` at `https://delegate.engine9.ai` — you do
+**not** need a local Delegate process.
+
+For `localhost` / `127.0.0.1` callbacks, Delegate returns a signed
+`?delegate_bridge=` token in the browser (Bot Fight cannot challenge that
+path). If an older `?delegate_code=` still lands here and server exchange is
+blocked, `/login` shows a **Continue sign-in on Delegate** link through
+`/handoff/browser-exchange`.
 
 ## How it's put together
 
