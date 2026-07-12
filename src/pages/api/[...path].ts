@@ -11,8 +11,7 @@ import { createEngine9Api } from "../../lib/engine9";
  */
 const handler: APIRoute = async ({ request, locals }) => {
   const api = createEngine9Api();
-  const ctx = (locals as { cfContext?: unknown }).cfContext;
-  return api.handleFetch(request, { basePath: "/api", ctx });
+  return api.handleFetch(request, { basePath: "/api", ctx: locals.cfContext });
 };
 
 export const GET = handler;

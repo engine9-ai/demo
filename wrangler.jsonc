@@ -9,6 +9,20 @@
   "observability": {
     "enabled": true,
   },
+  // Delegate — the shared cross-organization auth service. This site exchanges
+  // the one-time ?delegate_code= server-to-server using DELEGATE_SHARED_SECRET.
+  "vars": {
+    "DELEGATE_URL": "https://delegate.engine9.ai",
+  },
+  // Set values locally in .env (see .env.example); in prod use `wrangler secret put`.
+  "secrets": {
+    "required": [
+      // Must match the delegate deployment's DELEGATE_SHARED_SECRET.
+      "DELEGATE_SHARED_SECRET",
+      // HMAC key for this site's own signed session cookie.
+      "SESSION_SECRET",
+    ],
+  },
   // Static assets built by Astro (CSS, images). The Worker handles everything else.
   "assets": {
     "binding": "ASSETS",

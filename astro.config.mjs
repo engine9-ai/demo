@@ -4,10 +4,10 @@ import { defineConfig } from "astro/config";
 import cloudflare from "@astrojs/cloudflare";
 
 const inputToolsShim = fileURLToPath(
-  import.meta.resolve("@engine9/client/cloudflare/input-tools-shim")
+  import.meta.resolve("@engine9/core/cloudflare/input-tools-shim")
 );
 const unavailableModule = fileURLToPath(
-  import.meta.resolve("@engine9/client/cloudflare/unavailable-module")
+  import.meta.resolve("@engine9/core/cloudflare/unavailable-module")
 );
 
 // All pages are server-rendered so that VIP/Admin gating happens on the
@@ -22,7 +22,7 @@ export default defineConfig({
   vite: {
     resolve: {
       alias: [
-        // @engine9/client's interface transforms import @engine9/input-tools,
+        // @engine9/core's interface transforms import @engine9/input-tools,
         // whose index pulls server-only deps (AWS SDK, archiver, googleapis).
         // The shim re-exports the portable pieces. Exact match only --
         // subpaths like @engine9/input-tools/timelineTypes.js stay intact.

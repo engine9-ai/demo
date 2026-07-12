@@ -1,48 +1,42 @@
 import type { AstroCookies } from "astro";
+import {
+  sessionHasRole,
+  sessionPrimaryRole,
+  sessionNeedsRole,
+  type DelegateSession,
+  type CredentialLevel,
+} from "@engine9/core/auth/delegate";
+import { delegateAuth } from "./engine9";
 
 /**
- * Pretend authentication.
- *
- * In production, authentication is handled by the sibling "delegate"
- * deployment (a shared external auth scheme). Delegate would verify the user
- * and hand this site a person_id + entitlement level. This demo skips all of
- * that: the "Login as VIP" / "Login as Admin" buttons simply set a session
- * cookie directly. Everything downstream of the cookie -- the middleware
- * gating, the role checks, keying per-person data on person_id -- works the
- * same way it would with real auth.
+ * Thin cookie glue around @engine9/core's delegate auth. All real logic --
+ * code exchange, person dedupe (id_type "delegate"), role lookup from
+ * person_segment, token signing/verification -- lives in core; this file only
+ * moves the signed token in and out of the Astro cookie jar and names the
+ * demo's role policy.
  */
 
 export type Role = "vip" | "admin";
 
-export interface Session {
-  /** Integer key for all per-person data in SQLite (ticket, name, address...). */
-  personId: number;
-  role: Role;
-}
+/** Session payload minted by core's createDelegateAuth().login(). */
+export type Session = DelegateSession<Role>;
+export type { CredentialLevel };
 
 const COOKIE_NAME = "festival_session";
-
-/** The two seeded demo identities the login buttons sign in as. */
-export const DEMO_USERS: Record<Role, { personId: number; label: string }> = {
-  vip: { personId: 101, label: "Vera Vipperman (VIP)" },
-  admin: { personId: 900, label: "Ada Adminson (Admin)" },
-};
+const SESSION_TTL_SECONDS = 60 * 60 * 24; // 1 day
 
 export function getSession(cookies: AstroCookies): Session | null {
-  const raw = cookies.get(COOKIE_NAME)?.value;
-  if (!raw) return null;
-  const [role, id] = raw.split(":");
-  const personId = Number(id);
-  if ((role !== "vip" && role !== "admin") || !Number.isInteger(personId)) return null;
-  return { personId, role };
+  const token = cookies.get(COOKIE_NAME)?.value;
+  if (!token) return null;
+  return delegateAuth().verify(token);
 }
 
-export function setSession(cookies: AstroCookies, role: Role): void {
-  cookies.set(COOKIE_NAME, `${role}:${DEMO_USERS[role].personId}`, {
+export function setSession(cookies: AstroCookies, session: Session): void {
+  cookies.set(COOKIE_NAME, delegateAuth().issueToken(session), {
     path: "/",
     httpOnly: true,
     sameSite: "lax",
-    maxAge: 60 * 60 * 24, // 1 day
+    maxAge: SESSION_TTL_SECONDS,
   });
 }
 
@@ -51,10 +45,16 @@ export function clearSession(cookies: AstroCookies): void {
 }
 
 /** Can this session see VIP content? Admins can, so they can preview it. */
-export function canAccessVip(session: Session | null): boolean {
-  return session?.role === "vip" || session?.role === "admin";
-}
+export const canAccessVip = (session: Session | null): boolean =>
+  sessionHasRole(session, "vip", "admin");
 
-export function isAdmin(session: Session | null): boolean {
-  return session?.role === "admin";
-}
+export const isAdmin = (session: Session | null): boolean =>
+  sessionHasRole(session, "admin");
+
+/** Logged in via delegate but hasn't picked (or been granted) a role yet. */
+export const needsRole = (session: Session | null): boolean =>
+  sessionNeedsRole(session);
+
+/** Highest role, for display. */
+export const primaryRole = (session: Session | null): Role | "member" =>
+  sessionPrimaryRole(session, ["admin", "vip"]) ?? "member";

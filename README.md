@@ -14,6 +14,20 @@ npm install
 npm run dev
 ```
 
+### Developing against a local `@engine9/core` checkout
+
+`package.json` depends on `@engine9/core` from GitHub (`github:engine9-ai/core`)
+until the package is published to npm; then switch the dependency to
+`"^0.1.0"`. To iterate on a sibling `core` repo instead:
+
+```bash
+cd ../core && npm link
+cd ../demo && npm link @engine9/core
+```
+
+Re-run `npm link @engine9/core` after `npm install` or `npm ci` in this repo,
+since a fresh install restores the registry copy.
+
 Open http://localhost:4321. The dev script first applies the SQL migrations
 in `migrations/` to a local SQLite database (stored under `.wrangler/state/`),
 seeding the five acts, the schedule, ticket types, and two demo people.
@@ -29,43 +43,52 @@ seeding the five acts, the schedule, ticket types, and two demo people.
   sets VIP-only), and set ticket prices. Changes appear on the public site
   immediately.
 
-### Pretend login
+### Auth endpoints
 
-Real authentication belongs to the shared **delegate** service (a sibling
-deployment); this demo deliberately does not implement it. `/login` instead
-offers two buttons:
+Login is provided by the shared **delegate** service via `@engine9/core`.
+This site only wires config and HTTP endpoints:
 
-| Button | Identity | person_id | Can see |
-| --- | --- | --- | --- |
-| Login as VIP | Vera Vipperman | 101 | `/vip` |
-| Login as Admin | Ada Adminson | 900 | `/vip` and `/admin` |
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /login` | Starts delegate login (`return_to` → `/auth/delegate`) |
+| `GET /auth/delegate` | Callback: exchanges `?delegate_code=` and sets the session cookie |
+| `GET /auth/role` | Demo-only: grants VIP or Admin after first login |
+| `GET /choose-role` | First-time users pick VIP or Admin |
+| `POST /auth/logout` (or site logout) | Clears the local session cookie |
 
-Clicking one sets a session cookie; `src/middleware.ts` reads it on every
-request and redirects to `/login` before any gated page renders. Swapping the
-pretend login for delegate would only replace `src/lib/session.ts` and
-`src/pages/auth/login.ts` — the gating and data model stay the same.
+`src/middleware.ts` reads the session on every request and redirects to
+`/login` (or `/choose-role`) before any gated page renders.
+
+For how delegate handoff, person resolution, roles-as-segments, and signed
+sessions work, see [`@engine9/core` README — Delegate
+authentication](../core/README.md#delegate-authentication).
+
+Local development: copy `.env.example` to `.env`. Point `DELEGATE_URL` at a
+local delegate if needed, and set `DELEGATE_SHARED_SECRET` to the same value
+configured on that delegate deployment.
 
 ## How it's put together
 
 ```
-migrations/            SQL schema + seed (person, ticket, ticket_type, artist, performance)
+migrations/            SQL schema + seed (person, ticket, artist, Engine9 tables, segments)
 src/middleware.ts      Server-side gate for /vip/* and /admin/*
-src/lib/session.ts     Cookie session: { personId, role } and role checks
+src/lib/engine9.ts     All Engine9 wiring: plugin/segment ids, delegateAuth() config
+src/lib/session.ts     Cookie glue around core's signed delegate session
 src/lib/db.ts          D1/SQLite access + row types
-src/pages/             Public pages, /login, /vip, /admin, auth endpoints
+src/pages/             Public pages, /login, /choose-role, /vip, /admin, auth endpoints
 src/layouts/           Shared layout, nav that reflects login state, festival styling
 ```
 
 Every page is server-rendered (`output: "server"`); there is no client-side
 gating anywhere. All per-person rows (`person`, `ticket`) are keyed by an
-integer `person_id`, matching how delegate identifies people.
+integer `person_id`.
 
 ## Engine9 client
 
 The D1 database is also an **engine9 database**: migration
 `0003_engine9.sql` installs the standard Engine9 interface tables (`person`,
 `person_email`, `person_segment`, ...) and the site serves the
-`@engine9/client` API under `/api` — API-key-authenticated people creation,
+`@engine9/core` API under `/api` — API-key-authenticated people creation,
 person-related upserts, and segment-gated content reads. See
 [ENGINE9.md](./ENGINE9.md) for the deployment stages.
 

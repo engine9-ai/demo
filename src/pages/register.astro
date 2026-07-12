@@ -1,0 +1,70 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const ok = Astro.url.searchParams.get("ok");
+const error = Astro.url.searchParams.get("error");
+const personId = Astro.url.searchParams.get("person_id");
+---
+
+<Layout title="Register">
+  <div class="register-wrap">
+    <div class="card register-card">
+      <h1>Register</h1>
+      <p class="muted">
+        Sign up with your name and email. Your details are written through the
+        Engine9 client API (<code>POST /api/people</code>) into the festival
+        database.
+      </p>
+
+      {ok && (
+        <p class="notice ok">
+          You're registered{personId && <> — your <code>person_id</code> is <strong>{personId}</strong></>}.
+        </p>
+      )}
+
+      {error && (
+        <p class="notice err">
+          Registration failed{error === "name" ? ": enter your name" : error === "email" ? ": enter a valid email" : `: ${error}`}.
+        </p>
+      )}
+
+      <form method="post" action="/auth/register">
+        <div class="field">
+          <label for="name">Name</label>
+          <input id="name" name="name" type="text" required autocomplete="name" placeholder="Alex Rivera" />
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" required autocomplete="email" placeholder="alex@example.com" />
+        </div>
+        <button class="btn btn-primary" type="submit">Register</button>
+      </form>
+
+      <p class="muted fine">
+        Already have VIP access? <a href="/login">Log in</a>.
+      </p>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .register-wrap { display: flex; justify-content: center; padding-top: 2rem; }
+  .register-card { max-width: 28rem; }
+  .notice {
+    border-radius: 8px;
+    padding: 0.6rem 0.9rem;
+    margin: 0 0 1rem;
+  }
+  .notice.ok {
+    background: rgba(52, 211, 153, 0.12);
+    border: 1px solid rgba(52, 211, 153, 0.4);
+  }
+  .notice.err {
+    background: rgba(244, 114, 182, 0.12);
+    border: 1px solid rgba(244, 114, 182, 0.4);
+  }
+  form { margin-top: 1.25rem; }
+  .btn { width: 100%; margin-top: 0.5rem; }
+  .fine { margin-top: 1.5rem; font-size: 0.9rem; }
+  code { background: var(--surface-2); padding: 0.1rem 0.35rem; border-radius: 4px; }
+</style>

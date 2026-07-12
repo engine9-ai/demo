@@ -1,7 +1,7 @@
 -- Migration 0003: adopt the Engine9 client schema.
 -- The D1 database is now the engine9 database: the standard Engine9 interface
 -- tables replace the demo's ad-hoc person table (generated with
--- `npx e9client sqlite-ddl`), plus the api_key table used by the client API.
+-- `npx e9core sqlite-ddl`), plus the api_key table used by the client API.
 -- Demo content tables (artist, performance, ticket, ticket_type) are unchanged
 -- and act as the site content read through the client API.
 
@@ -389,7 +389,7 @@ INSERT INTO plugin (id, path, name, table_prefix)
 VALUES ('86dfc4a8-318b-51e6-9f25-d9648f963609', '@demo/festival-website', 'Festival Website', '');
 
 -- Demo API key: e9k_0ca7302713d70f5d130cf52cbf9167f0ea1a45ef (sha-256 stored).
--- Rotate for any non-demo deployment: npx e9client create-api-key
+-- Rotate for any non-demo deployment: npx e9core create-api-key
 INSERT INTO api_key (id, name, key_hash, scopes, active)
 VALUES (
   'f31c2c8f-0296-4dd8-9b3c-2b0e4f4dbe1a',

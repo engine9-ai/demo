@@ -9,7 +9,7 @@ const db = getDB();
 
 // All per-person data is keyed by the integer person_id (engine9 person.id).
 // The person/person_email/person_address tables are the standard Engine9
-// interface tables managed by @engine9/client.
+// interface tables managed by @engine9/core.
 const person = await db
   .prepare(
     `SELECT p.id AS person_id,
@@ -46,7 +46,7 @@ const { results: vipSets } = await db
 
 <Layout title="VIP Lounge">
   <p class="kicker">VIP only · gated server-side</p>
-  <h1>Welcome to the <span class="gradient-text">VIP Lounge</span>{person && `, ${person.name.split(" ")[0]}`}</h1>
+  <h1>Welcome to the <span class="gradient-text">VIP Lounge</span>{person?.name ? `, ${person.name.split(" ")[0]}` : ""}</h1>
   <p class="muted">
     Everything on this page is invisible to general admission — the VIP-only
     sets below aren't even included in the public schedule query.
@@ -60,8 +60,16 @@ const { results: vipSets } = await db
           <tbody>
             <tr><th>person_id</th><td>{person.person_id}</td></tr>
             <tr><th>Name</th><td>{person.name}</td></tr>
-            <tr><th>Email</th><td>{person.email}</td></tr>
+            <tr><th>Email</th><td>{person.email ?? session.email}</td></tr>
             <tr><th>Address</th><td>{person.address}</td></tr>
+            <tr>
+              <th>Sign-in</th>
+              <td>
+                {session.auth?.signInProvider
+                  ? `delegate · ${session.auth.signInProvider}${session.auth.twoFactor ? " · 2FA" : ""}`
+                  : "delegate"}
+              </td>
+            </tr>
           </tbody>
         </table>
       ) : (

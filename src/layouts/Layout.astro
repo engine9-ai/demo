@@ -1,5 +1,5 @@
 ---
-import { canAccessVip, isAdmin } from "../lib/session";
+import { canAccessVip, isAdmin, primaryRole } from "../lib/session";
 
 interface Props {
   title: string;
@@ -14,6 +14,7 @@ const navLinks = [
   { href: "/lineup", label: "Lineup" },
   { href: "/schedule", label: "Schedule" },
   { href: "/tickets", label: "Tickets" },
+  { href: "/register", label: "Register" },
 ];
 ---
 
@@ -42,7 +43,12 @@ const navLinks = [
       <div class="session-box">
         {session ? (
           <>
-            <span class:list={["badge", session.role]}>{session.role.toUpperCase()}</span>
+            <span
+              class:list={["badge", primaryRole(session)]}
+              title={session.auth?.signInProvider
+                ? `via delegate · ${session.auth.signInProvider}${session.auth.twoFactor ? " · 2FA" : ""}`
+                : "via delegate"}
+            >{primaryRole(session).toUpperCase()}</span>
             <form method="post" action="/auth/logout">
               <button class="btn btn-ghost" type="submit">Log out</button>
             </form>
@@ -60,8 +66,9 @@ const navLinks = [
     <footer class="site-footer">
       <p>Solstice Wave Festival · Crescent Bay Waterfront · July 18–19, 2026</p>
       <p class="fine">
-        Demo site. Authentication is normally handled by the shared
-        <strong>delegate</strong> service — the login buttons here are pretend.
+        Demo site. Authentication is handled by the shared
+        <strong>delegate</strong> service; access levels are this site's own
+        segments.
       </p>
     </footer>
   </body>
@@ -177,6 +184,7 @@ const navLinks = [
   }
   .badge.vip { background: rgba(251, 191, 36, 0.15); color: var(--vip); border: 1px solid rgba(251, 191, 36, 0.4); }
   .badge.admin { background: rgba(52, 211, 153, 0.15); color: var(--admin); border: 1px solid rgba(52, 211, 153, 0.4); }
+  .badge.member { background: rgba(168, 85, 247, 0.15); color: var(--primary); border: 1px solid rgba(168, 85, 247, 0.4); }
 
   .btn {
     display: inline-block;

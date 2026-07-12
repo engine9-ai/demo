@@ -5,8 +5,38 @@ import { env } from "cloudflare:workers";
  * dev) it is a plain SQLite file under .wrangler/state; deployed it is a
  * Cloudflare D1 database. Same query API either way.
  */
+/** D1 binding metadata (matches wrangler.jsonc). */
+export const DB_BINDING = {
+  binding: "DB",
+  database_name: "festival-db",
+  database_id: "c7c28218-d45f-4abf-a844-be05070a9f07",
+} as const;
+
 export function getDB(): D1Database {
   return env.DB;
+}
+
+/**
+ * Log database location for debugging. D1 blocks PRAGMA database_list inside
+ * Workers, so we always log the binding metadata and the usual local path.
+ */
+export async function logDbPath(db: D1Database = getDB()): Promise<void> {
+  console.log(
+    `engine9-db: binding=${DB_BINDING.binding} database=${DB_BINDING.database_name} id=${DB_BINDING.database_id}`
+  );
+  console.log(
+    "engine9-db: local SQLite path (wrangler dev): .wrangler/state/v3/d1/miniflare-D1DatabaseObject/*.sqlite"
+  );
+  try {
+    const { results } = await db
+      .prepare("PRAGMA database_list")
+      .all<{ seq: number; name: string; file: string }>();
+    for (const row of results) {
+      if (row.file) console.log(`engine9-db: pragma path=${row.file}`);
+    }
+  } catch {
+    // D1/miniflare does not authorize PRAGMA database_list in the Worker sandbox.
+  }
 }
 
 export interface Artist {

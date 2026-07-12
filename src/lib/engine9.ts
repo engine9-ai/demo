@@ -1,8 +1,9 @@
 import { env } from "cloudflare:workers";
-import PersonWorker from "@engine9/client/PersonWorker";
-import { SqlApiKeyStore } from "@engine9/client/auth";
-import { BatchLogger } from "@engine9/client/logging";
-import { createApi } from "@engine9/client/api";
+import PersonWorker from "@engine9/core/PersonWorker";
+import { SqlApiKeyStore } from "@engine9/core/auth";
+import { createDelegateAuth } from "@engine9/core/auth/delegate";
+import { BatchLogger } from "@engine9/core/logging";
+import { createApi } from "@engine9/core/api";
 
 /**
  * Engine9 client wiring for the festival demo.
@@ -17,9 +18,41 @@ import { createApi } from "@engine9/client/api";
 export const FESTIVAL_PLUGIN_ID = "86dfc4a8-318b-51e6-9f25-d9648f963609";
 /** The VIP segment seeded in 0003_engine9.sql; gates VIP content reads */
 export const VIP_SEGMENT_ID = "5f2ab45c-0a39-4939-a2af-c1fcc58f37ff";
+/** The Admin segment seeded in 0004_admin_segment.sql; grants /admin access */
+export const ADMIN_SEGMENT_ID = "4f4ac886-f53d-48e1-b4bd-5a98eb48cc6f";
+/** Demo API key seeded in 0003_engine9.sql -- server-side only, never sent to the browser */
+export const DEMO_API_KEY = "e9k_0ca7302713d70f5d130cf52cbf9167f0ea1a45ef";
+
+/** Role -> segment id. Roles ARE segments in this demo (ordered admin-first). */
+export const ROLE_SEGMENTS = {
+  admin: ADMIN_SEGMENT_ID,
+  vip: VIP_SEGMENT_ID,
+} as const;
+
+/** The PersonWorker runs the full inbound person pipeline against D1. */
+export function createPersonWorker() {
+  return new PersonWorker({ accountId: "festival-demo", d1: env.DB });
+}
+
+/**
+ * All delegate login/session/role logic lives in @engine9/core; this is pure
+ * configuration: which delegate to trust, which secrets to use, which plugin
+ * records the logins, and which segments count as roles.
+ */
+export function delegateAuth() {
+  return createDelegateAuth({
+    worker: createPersonWorker(),
+    delegateUrl: env.DELEGATE_URL || "https://delegate.engine9.ai",
+    handoffSecret: env.DELEGATE_SHARED_SECRET,
+    sessionSecret: env.SESSION_SECRET,
+    pluginId: FESTIVAL_PLUGIN_ID,
+    remoteInputId: "delegate-login",
+    roleSegments: ROLE_SEGMENTS,
+  });
+}
 
 export function createEngine9Api() {
-  const worker = new PersonWorker({ accountId: "festival-demo", d1: env.DB });
+  const worker = createPersonWorker();
   // API keys live in the api_key D1 table (swap for KVApiKeyStore + a KV
   // namespace without touching the endpoints)
   const keyStore = new SqlApiKeyStore({ worker });

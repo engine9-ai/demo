@@ -33,6 +33,10 @@ const counts = await db
       <h3>💵 Ticket prices</h3>
       <p class="muted">{counts?.ticket_types} tiers on sale. Set prices.</p>
     </a>
+    <a class="card panel" href="/admin/people">
+      <h3>👥 People</h3>
+      <p class="muted">{counts?.people} registered. View names and emails.</p>
+    </a>
   </div>
 
   <p class="muted" style="margin-top: 2rem;">{counts?.people} people in the database (keyed by person_id).</p>

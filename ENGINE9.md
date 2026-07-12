@@ -1,4 +1,4 @@
-# Deploying @engine9/client on this site
+# Deploying @engine9/core on this site
 
 This demo doubles as the reference installation of the Engine9 client on a
 "real" website. The D1 database (`festival-db`) **is** the engine9 database:
@@ -28,16 +28,24 @@ the same sequence to install the client on any existing site.
 ### Stage 1 — Add the client library
 
 ```bash
-npm install @engine9/client        # here: "file:../client" in package.json
+npm install @engine9/core
 ```
+
+`package.json` currently uses `"@engine9/core": "github:engine9-ai/core"` so
+installs work before the package is on npm; switch to `"^0.1.0"` once it is
+published. `overrides` pin transitive `@engine9/input-tools` and
+`@engine9/interfaces` until those packages are published with registry deps
+(push the updated `core` and `interfaces` repos first). To develop against a
+local `core` checkout, run `npm link @engine9/core` after linking from
+`../core` — see the README.
 
 Bundler wiring for Cloudflare lives in `astro.config.mjs`:
 
 - alias `@engine9/input-tools` (exact match) to
-  `@engine9/client/cloudflare/input-tools-shim` so the interface transforms
+  `@engine9/core/cloudflare/input-tools-shim` so the interface transforms
   don't drag in server-only dependencies;
 - alias `knex`, `mysql2/promise`, and `better-sqlite3` to
-  `@engine9/client/cloudflare/unavailable-module` — they back SQLWorker's
+  `@engine9/core/cloudflare/unavailable-module` — they back SQLWorker's
   non-D1 connection modes and are never loaded on Workers.
 
 `wrangler.jsonc` already had `nodejs_compat` and the `DB` D1 binding; nothing
@@ -48,7 +56,7 @@ else was needed.
 Generate the DDL with the client (no server required):
 
 ```bash
-npx e9client sqlite-ddl > engine9-ddl.sql
+npx e9core sqlite-ddl > engine9-ddl.sql
 ```
 
 That DDL (idempotent `create table if not exists`) is the middle section of
@@ -85,7 +93,7 @@ Also in `0003_engine9.sql`:
 
   ```bash
   # prints the key once (stderr) and the INSERT statement (stdout)
-  npx e9client create-api-key --print-sql --name my-website \
+  npx e9core create-api-key --print-sql --name my-website \
     --scopes people:write,tables:write,data:read > new-key.sql
   npx wrangler d1 execute festival-db --remote --file new-key.sql
   # deactivate the demo key
@@ -94,7 +102,10 @@ Also in `0003_engine9.sql`:
   ```
 
 - a `VIP` segment (`5f2ab45c-0a39-4939-a2af-c1fcc58f37ff`) plus
-  `person_segment` rows for the existing VIP ticket holders.
+  `person_segment` rows for the existing VIP ticket holders;
+- an `Admin` segment (`4f4ac886-f53d-48e1-b4bd-5a98eb48cc6f`, in
+  `0004_admin_segment.sql`) with the seeded demo admin. Segments double as
+  the site's **roles** for delegate logins (see Stage 8).
 
 ### Stage 5 — Wire the API into the site
 
@@ -108,7 +119,7 @@ Two small files:
 - `src/pages/api/[...path].ts` — Astro catch-all route that hands the raw
   `Request` to `api.handleFetch`. On a plain Worker (no Astro) you'd call
   `handleFetch` from `fetch()` directly — see
-  `@engine9/client/cloudflare/worker.js`.
+  `@engine9/core/cloudflare/worker.js`.
 
 ### Stage 6 — Verify locally
 
@@ -143,6 +154,27 @@ npm run deploy              # astro build && wrangler deploy
 For production, also rotate the API key (Stage 4) and, if long-term
 modification logs are wanted, add an R2 bucket binding and switch the logger
 in `src/lib/engine9.ts` to the R2 sink.
+
+### Stage 8 — Delegate authentication
+
+Login is provided by the shared **delegate** deployment via
+`@engine9/core/auth/delegate` (`createDelegateAuth`). This site only wires
+config and endpoints:
+
+- `src/lib/engine9.ts` — `delegateAuth()` config (delegate URL, shared secret,
+  session secret, plugin id, role→segment map)
+- `GET /auth/delegate` — callback that calls `login(code)` and sets the cookie
+- `GET /auth/role` + `/choose-role` — demo-only first-login role picker
+- `src/middleware.ts` — gates `/vip` and `/admin` from the session
+
+See [`@engine9/core` README — Delegate
+authentication](../core/README.md#delegate-authentication) for the handoff
+flow, person resolution, and session signing.
+
+Secrets: `DELEGATE_SHARED_SECRET` (must match the delegate deployment) and
+`SESSION_SECRET`, set via `.env` locally and `wrangler secret put` in
+production. `DELEGATE_URL` is a wrangler var (`https://delegate.engine9.ai`),
+overridable in `.env` for a local delegate.
 
 ## What stays on the engine9 server
 
