@@ -22,7 +22,8 @@ export type Role = "vip" | "admin";
 export type Session = DelegateSession<Role>;
 export type { CredentialLevel };
 
-const COOKIE_NAME = "festival_session";
+/** Astro/Lucia community convention; cookie glue stays here — core is host-agnostic. */
+const COOKIE_NAME = "session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24; // 1 day
 
 export function getSession(cookies: AstroCookies): Session | null {
@@ -36,12 +37,15 @@ export function setSession(cookies: AstroCookies, session: Session): void {
     path: "/",
     httpOnly: true,
     sameSite: "lax",
+    secure: import.meta.env.PROD,
     maxAge: SESSION_TTL_SECONDS,
   });
 }
 
 export function clearSession(cookies: AstroCookies): void {
   cookies.delete(COOKIE_NAME, { path: "/" });
+  // Drop the old demo-specific name if present.
+  cookies.delete("festival_session", { path: "/" });
 }
 
 /** Can this session see VIP content? Admins can, so they can preview it. */

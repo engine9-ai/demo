@@ -1,6 +1,17 @@
 import type { APIRoute } from "astro";
+import { createDelegateLoginFailure } from "@engine9/core/auth/delegate";
+import type { DelegateLoginFailure } from "@engine9/core/auth/delegate";
 import { delegateAuth } from "../../lib/engine9";
 import { setSession, needsRole, isAdmin, type Session } from "../../lib/session";
+
+function loginFailureRedirect(err: DelegateLoginFailure | Error) {
+  const failure = err as DelegateLoginFailure;
+  const params = new URLSearchParams();
+  if (failure.reason) params.set("error", failure.reason);
+  if (failure.userMessage) params.set("message", failure.userMessage);
+  if (failure.kind) params.set("kind", failure.kind);
+  return `/login?${params}`;
+}
 
 /**
  * Delegate callback. The browser lands here from delegate's
@@ -11,15 +22,19 @@ import { setSession, needsRole, isAdmin, type Session } from "../../lib/session"
  */
 export const GET: APIRoute = async ({ url, cookies, redirect }) => {
   const code = url.searchParams.get("delegate_code");
-  if (!code) return redirect("/login?error=missing_delegate_code", 303);
 
   let session: Session;
   try {
+    if (!code) throw createDelegateLoginFailure("missing_delegate_code");
     ({ session } = await delegateAuth().login(code));
   } catch (e) {
     console.error("delegate login failed", e);
-    const reason = (e as { reason?: string }).reason || "login_failed";
-    return redirect(`/login?error=${encodeURIComponent(reason)}`, 303);
+    const err = e as Partial<DelegateLoginFailure>;
+    const failure =
+      err.userMessage && err.reason && err.kind
+        ? (err as DelegateLoginFailure)
+        : createDelegateLoginFailure(err.reason || "login_failed");
+    return redirect(loginFailureRedirect(failure), 303);
   }
 
   setSession(cookies, session);

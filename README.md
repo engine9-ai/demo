@@ -28,10 +28,13 @@ cd ../demo && npm link @engine9/core
 Re-run `npm link @engine9/core` after `npm install` or `npm ci` in this repo,
 since a fresh install restores the registry copy.
 
-Open http://localhost:4321. The dev script first applies the SQL migrations
-in `migrations/` to a local SQLite database (stored under `.wrangler/state/`),
-seeding the five acts, the schedule, ticket types, and two demo people.
-`npm run db:reset` wipes it back to the seed state.
+Open **http://localhost:5000** (or **http://localhost:5001**). Ports 5000 and
+5001 are required for Delegate auth — they are the allowed `return_to` origins
+for local development (see `ALLOWED_RETURN_ORIGINS` on the delegate Worker).
+The dev script first applies the SQL migrations in `migrations/` to a local
+SQLite database (stored under `.wrangler/state/`), seeding the five acts, the
+schedule, ticket types, and two demo people. `npm run db:reset` wipes it back
+to the seed state.
 
 ## The demo
 
@@ -63,9 +66,12 @@ For how delegate handoff, person resolution, roles-as-segments, and signed
 sessions work, see [`@engine9/core` README — Delegate
 authentication](../core/README.md#delegate-authentication).
 
-Local development: copy `.env.example` to `.env`. Point `DELEGATE_URL` at a
-local delegate if needed, and set `DELEGATE_SHARED_SECRET` to the same value
-configured on that delegate deployment.
+Local development: copy `.env.example` to `.env`. **Use a local Delegate** —
+set `DELEGATE_URL=http://localhost:8787` and the same `DELEGATE_SHARED_SECRET`
+as that local Worker. Calling production `https://delegate.engine9.ai` from
+`astro dev` fails on `POST /handoff/exchange` with Cloudflare’s bot challenge
+(`status_403` / “Just a moment…”), because the exchange is a non-browser
+server request. Run `npm run dev` in `../delegate` alongside this app.
 
 ## How it's put together
 
