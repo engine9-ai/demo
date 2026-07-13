@@ -13,7 +13,7 @@ import { delegateAuth } from "./engine9";
  * code exchange, person dedupe (id_type "delegate"), role lookup from
  * person_segment, token signing/verification -- lives in core; this file only
  * moves the signed token in and out of the Astro cookie jar and names the
- * demo's role policy.
+ * demo's role policy (session-scoped via loadRolesOnLogin: false).
  */
 
 export type Role = "vip" | "admin";

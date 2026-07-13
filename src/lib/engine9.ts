@@ -23,7 +23,8 @@ export const ADMIN_SEGMENT_ID = "4f4ac886-f53d-48e1-b4bd-5a98eb48cc6f";
 /** Demo API key seeded in 0003_engine9.sql -- server-side only, never sent to the browser */
 export const DEMO_API_KEY = "e9k_0ca7302713d70f5d130cf52cbf9167f0ea1a45ef";
 
-/** Role -> segment id. Roles ARE segments in this demo (ordered admin-first). */
+/** Role -> segment id. Roles ARE segments in this demo (ordered admin-first).
+ * These names (vip/admin) are demo site policy only — not defined by core or Delegate. */
 export const ROLE_SEGMENTS = {
   admin: ADMIN_SEGMENT_ID,
   vip: VIP_SEGMENT_ID,
@@ -37,7 +38,8 @@ export function createPersonWorker() {
 /**
  * All delegate login/session/role logic lives in @engine9/core; this is pure
  * configuration: which delegate to trust, which secrets to use, which plugin
- * records the logins, and which segments count as roles.
+ * records the logins, which segments count as roles, and that demo roles are
+ * session-scoped (re-prompted every login).
  */
 export function delegateAuth() {
   return createDelegateAuth({
@@ -48,6 +50,8 @@ export function delegateAuth() {
     pluginId: FESTIVAL_PLUGIN_ID,
     remoteInputId: "delegate-login",
     roleSegments: ROLE_SEGMENTS,
+    // Demo session roles: every login starts empty so /choose-role re-prompts.
+    loadRolesOnLogin: false,
   });
 }
 

@@ -2,6 +2,11 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "astro/config";
 import cloudflare from "@astrojs/cloudflare";
+import { loadEnv } from "vite";
+
+const root = fileURLToPath(new URL(".", import.meta.url));
+const env = loadEnv(process.env.NODE_ENV ?? "development", root, "");
+const port = Number(process.env.PORT ?? env.PORT ?? 5000);
 
 const inputToolsShim = fileURLToPath(
   import.meta.resolve("@engine9/core/cloudflare/input-tools-shim")
@@ -19,7 +24,13 @@ export default defineConfig({
   adapter: cloudflare({
     imageService: "passthrough",
   }),
+  server: {
+    port,
+  },
   vite: {
+    server: {
+      strictPort: true,
+    },
     resolve: {
       alias: [
         // @engine9/core's interface transforms import @engine9/input-tools,

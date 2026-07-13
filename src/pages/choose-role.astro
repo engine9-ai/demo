@@ -1,8 +1,9 @@
 ---
 import Layout from "../layouts/Layout.astro";
 
-// Shown right after a first delegate login: the person exists (deduped via
-// id_type "delegate"), but belongs to neither role segment yet.
+// Shown after every delegate login while the demo session has no role yet
+// (loadRolesOnLogin: false). Choosing a role writes it onto the session and
+// updates person_segment for API gating.
 const session = Astro.locals.session;
 if (!session) return Astro.redirect("/login");
 ---
@@ -15,8 +16,8 @@ if (!session) return Astro.redirect("/login");
       <p class="muted">
         You're signed in through <strong>delegate</strong> and recognized as
         <code>person_id {session.personId}</code>. Pick how you'd like to use
-        the site — this adds you to the matching segment
-        (<code>person_segment</code>), which is what actually gates access.
+        this demo session — VIP or Admin. Logout clears the session, so the
+        next login will ask again.
       </p>
 
       <div class="buttons">

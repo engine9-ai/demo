@@ -11,9 +11,11 @@ const continueUrl = Astro.url.searchParams.get("continue");
 const session = Astro.locals.session;
 
 // Core builds the delegate login URL; the browser comes back to
-// /auth/delegate with a one-time code or signed bridge.
+// /auth/delegate with a one-time code or signed bridge. prompt=consent
+// forces a button click on Delegate even when already logged in there.
 const loginUrl = delegateAuth().loginUrl({
   returnTo: new URL("/auth/delegate", Astro.url.origin).toString(),
+  prompt: "consent",
 });
 ---
 
