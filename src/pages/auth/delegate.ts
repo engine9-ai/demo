@@ -1,15 +1,20 @@
 import type { APIRoute } from "astro";
-import { createDelegateLoginFailure } from "@engine9/core/auth/delegate";
+import {
+  createDelegateLoginFailure,
+  normalizeDelegateLoginFailure,
+} from "@engine9/core/auth/delegate";
 import type { DelegateLoginFailure } from "@engine9/core/auth/delegate";
 import { delegateAuth } from "../../lib/engine9";
 import { setSession, needsRole, isAdmin, type Session } from "../../lib/session";
 
-function loginFailureRedirect(err: DelegateLoginFailure | Error) {
-  const failure = err as DelegateLoginFailure;
+function loginFailureRedirect(failure: DelegateLoginFailure) {
   const params = new URLSearchParams();
   if (failure.reason) params.set("error", failure.reason);
   if (failure.userMessage) params.set("message", failure.userMessage);
   if (failure.kind) params.set("kind", failure.kind);
+  if (failure.message && failure.message !== failure.userMessage) {
+    params.set("detail", failure.message);
+  }
   if (failure.browserExchangeUrl) {
     params.set("continue", failure.browserExchangeUrl);
   }
@@ -42,12 +47,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
     }
   } catch (e) {
     console.error("delegate login failed", e);
-    const err = e as Partial<DelegateLoginFailure>;
-    const failure =
-      err.userMessage && err.reason && err.kind
-        ? (err as DelegateLoginFailure)
-        : createDelegateLoginFailure(err.reason || "login_failed");
-    if (err.browserExchangeUrl) failure.browserExchangeUrl = err.browserExchangeUrl;
+    const failure = normalizeDelegateLoginFailure(e);
     return redirect(loginFailureRedirect(failure), 303);
   }
 

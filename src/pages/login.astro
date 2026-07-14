@@ -7,6 +7,7 @@ const required = Astro.url.searchParams.get("required");
 const errorMessage = Astro.url.searchParams.get("message");
 const errorReason = Astro.url.searchParams.get("error");
 const errorKind = Astro.url.searchParams.get("kind");
+const errorDetail = Astro.url.searchParams.get("detail");
 const continueUrl = Astro.url.searchParams.get("continue");
 const session = Astro.locals.session;
 
@@ -41,9 +42,19 @@ const loginUrl = delegateAuth().loginUrl({
       {errorMessage && !continueUrl && (
         <p class={`notice error${errorKind === "configuration" ? " config" : ""}`}>
           {errorMessage}
-          {errorKind === "configuration" && errorReason && (
+          {(errorReason || errorDetail) && (
             <span class="operator-detail">
-              Operator detail: <code>{errorReason}</code>
+              {errorReason && (
+                <>
+                  Error code: <code>{errorReason}</code>
+                </>
+              )}
+              {errorDetail && (
+                <>
+                  {errorReason && " · "}
+                  Detail: <code>{errorDetail}</code>
+                </>
+              )}
             </span>
           )}
         </p>

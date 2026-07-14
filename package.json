@@ -8,6 +8,7 @@
     "dev": "npm run db:migrate && node --env-file-if-exists=.env ./node_modules/astro/bin/astro.mjs dev",
     "build": "astro build",
     "preview": "astro build && wrangler dev",
+    "logs": "wrangler tail",
     "deploy": "astro build && wrangler deploy",
     "db:migrate": "wrangler d1 migrations apply festival-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply festival-db --remote",
@@ -17,7 +18,7 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.1.1",
-    "@engine9/core": "github:engine9-ai/core",
+    "@engine9/core": "file:../core",
     "astro": "^7.0.6",
     "wrangler": "^4.107.0"
   },
