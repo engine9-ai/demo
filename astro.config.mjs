@@ -1,12 +1,40 @@
 // @ts-check
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "astro/config";
 import cloudflare from "@astrojs/cloudflare";
-import { loadEnv } from "vite";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
-const env = loadEnv(process.env.NODE_ENV ?? "development", root, "");
-const port = Number(process.env.PORT ?? env.PORT ?? 5000);
+
+/** Read PORT from .env files (Vite precedence; later files override). */
+function readPortFromEnvFiles(mode) {
+  const files = [
+    ".env",
+    ".env.local",
+    `.env.${mode}`,
+    `.env.${mode}.local`,
+  ];
+  let port;
+  for (const file of files) {
+    const path = join(root, file);
+    if (!existsSync(path)) continue;
+    for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const match = trimmed.match(/^PORT\s*=\s*"?(\d+)"?\s*(?:#.*)?$/);
+      if (match) port = match[1];
+    }
+  }
+  return port;
+}
+
+const mode = process.env.NODE_ENV ?? "development";
+const filePort = readPortFromEnvFiles(mode);
+// Shell/CLI wins; otherwise use PORT from .env (loadEnv can miss it at config time).
+const explicitPort = process.env.PORT ?? filePort;
+const port = explicitPort ? Number(explicitPort) : 3000;
+const strictPort = Boolean(explicitPort);
 
 const inputToolsShim = fileURLToPath(
   import.meta.resolve("@engine9/core/cloudflare/input-tools-shim")
@@ -29,7 +57,9 @@ export default defineConfig({
   },
   vite: {
     server: {
-      strictPort: true,
+      port,
+      // When PORT is unset, try 3000 then 3001/3002 (Delegate allowlist).
+      strictPort,
     },
     resolve: {
       alias: [

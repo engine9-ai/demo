@@ -28,9 +28,11 @@ cd ../demo && npm link @engine9/core
 Re-run `npm link @engine9/core` after `npm install` or `npm ci` in this repo,
 since a fresh install restores the registry copy.
 
-Open **http://localhost:5000** (or **http://localhost:5001**). Ports 5000 and
-5001 are required for Delegate auth — they are the allowed `return_to` origins
-for local development (see `ALLOWED_RETURN_ORIGINS` on the delegate Worker).
+Open **http://localhost:3000** (or **http://localhost:3001** /
+**http://localhost:3002** if 3000 is taken). Set `PORT` in `.env` to pin a
+port (e.g. `PORT=3001`); run `npx astro dev stop` before restarting if the port
+changed. Ports 3000–3002 are the allowed `return_to` origins for local
+development (see `ALLOWED_RETURN_ORIGINS` on the delegate Worker).
 The dev script first applies the SQL migrations in `migrations/` to a local
 SQLite database (stored under `.wrangler/state/`), seeding the five acts, the
 schedule, ticket types, and two demo people. `npm run db:reset` wipes it back
