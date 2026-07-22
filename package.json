@@ -27,7 +27,7 @@
     "typescript": "^6.0.3"
   },
   "overrides": {
-    "@engine9/input-tools": "^2.3.9",
+    "@engine9/input-tools": "^2.3.11",
     "@engine9/interfaces": "github:engine9-io/interfaces"
   }
 }
