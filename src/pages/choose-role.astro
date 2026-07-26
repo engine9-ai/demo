@@ -11,7 +11,8 @@ if (!session) return Astro.redirect("/login");
 <Layout title="Choose your role">
   <div class="role-wrap">
     <div class="card role-card">
-      <h1>Welcome{session.email ? `, ${session.email}` : ""}!</h1>
+      <h1>Welcome!</h1>
+      {session.email && <p class="welcome-email">{session.email}</p>}
 
       <p class="muted">
         You're signed in through <strong>delegate</strong> and recognized as
@@ -39,7 +40,14 @@ if (!session) return Astro.redirect("/login");
 
 <style>
   .role-wrap { display: flex; justify-content: center; padding-top: 2rem; }
-  .role-card { max-width: 30rem; }
+  .role-card { width: min(30rem, 100%); }
+  .welcome-email {
+    margin: 0 0 0.75rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
   .buttons { display: grid; gap: 1rem; margin-top: 1.5rem; }
   .buttons form { margin: 0; }
   .buttons .btn { width: 100%; }

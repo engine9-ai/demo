@@ -1,4 +1,5 @@
 ---
+import { env } from "cloudflare:workers";
 import Layout from "../layouts/Layout.astro";
 import { delegateAuth } from "../lib/engine9";
 import { primaryRole } from "../lib/session";
@@ -11,96 +12,307 @@ const errorDetail = Astro.url.searchParams.get("detail");
 const continueUrl = Astro.url.searchParams.get("continue");
 const session = Astro.locals.session;
 
-// Core builds the delegate login URL; the browser comes back to
-// /auth/delegate with a one-time code or signed bridge. prompt=consent
-// forces a button click on Delegate even when already logged in there.
-const loginUrl = delegateAuth().loginUrl({
-  returnTo: new URL("/auth/delegate", Astro.url.origin).toString(),
-  prompt: "consent",
-});
+const returnTo = new URL("/auth/delegate", Astro.url.origin).toString();
+const auth = delegateAuth();
+const delegateBase = env.DELEGATE_URL || "https://delegate.engine9.ai";
+
+/** Production-style handoff: skip Delegate UI when already signed in there. */
+const silentHandoffUrl = auth.loginUrl({ returnTo });
+
+/** Explicit consent: always show Delegate Continue / switch-account UI. */
+const consentHandoffUrl = auth.loginUrl({ returnTo, prompt: "consent" });
+
+/** Inspect Delegate itself (no site handoff). */
+const directDelegateLoginUrl = new URL("/login", delegateBase).toString();
+
+const profileUrl = new URL("/profile", delegateBase).toString();
+
+/** Pre-login profile probe (top-level popup → postMessage). */
+const profileBridgeUrl = new URL("/profile/bridge", delegateBase);
+profileBridgeUrl.searchParams.set("origin", Astro.url.origin);
 ---
 
 <Layout title="Log in">
   <div class="login-wrap">
-    <div class="card login-card">
-      <h1>Log in</h1>
+    <h1>Log in</h1>
+    <p class="lede">
+      This page demonstrates how a core site can use the shared
+      <strong>delegate</strong> service. Try each option to see the different
+      browser steps and what this demo does after handoff succeeds.
+    </p>
 
-      {required && (
-        <p class="notice">
-          That page requires <strong>{required.toUpperCase()}</strong> access.
-          Log in below to continue.
-        </p>
-      )}
+    {required && (
+      <p class="notice">
+        That page requires <strong>{required.toUpperCase()}</strong> access.
+        Use one of the options below to continue.
+      </p>
+    )}
 
-      {continueUrl && (
-        <p class="notice config">
-          Local development needs one more browser step so Cloudflare’s bot
-          check can run on the Delegate host.
-        </p>
-      )}
+    {continueUrl && (
+      <p class="notice config">
+        Local development needs one more browser step so Cloudflare’s bot
+        check can run on the Delegate host.
+      </p>
+    )}
 
-      {errorMessage && !continueUrl && (
-        <p class={`notice error${errorKind === "configuration" ? " config" : ""}`}>
-          {errorMessage}
-          {(errorReason || errorDetail) && (
-            <span class="operator-detail">
-              {errorReason && (
-                <>
-                  Error code: <code>{errorReason}</code>
-                </>
-              )}
-              {errorDetail && (
-                <>
-                  {errorReason && " · "}
-                  Detail: <code>{errorDetail}</code>
-                </>
-              )}
-            </span>
-          )}
-        </p>
-      )}
-
-      {continueUrl ? (
-        <p class="muted">
-          Your identity was verified, but this machine cannot call Delegate’s
-          server exchange directly. Finish sign-in by opening Delegate in your
-          browser:
-        </p>
-      ) : (
-        <p class="muted">
-          Authentication is handled by the shared <strong>delegate</strong>
-          service. Delegate verifies who you are; this site then recognizes you
-          as a <code>person_id</code> and applies your access from its own
-          segments.
-        </p>
-      )}
-
-      <div class="buttons">
-        {continueUrl ? (
-          <a class="btn btn-primary" href={continueUrl}>Continue sign-in on Delegate</a>
-        ) : (
-          <a class="btn btn-primary" href={loginUrl}>Sign in with Delegate</a>
+    {errorMessage && !continueUrl && (
+      <p class={`notice error${errorKind === "configuration" ? " config" : ""}`}>
+        {errorMessage}
+        {(errorReason || errorDetail) && (
+          <span class="operator-detail">
+            {errorReason && (
+              <>
+                Error code: <code>{errorReason}</code>
+              </>
+            )}
+            {errorDetail && (
+              <>
+                {errorReason && " · "}
+                Detail: <code>{errorDetail}</code>
+              </>
+            )}
+          </span>
         )}
-      </div>
+      </p>
+    )}
 
-      {session && !continueUrl && (
-        <p class="muted" style="margin-top: 1.5rem;">
-          You're currently logged in as <strong>{primaryRole(session).toUpperCase()}</strong>
-          (person_id {session.personId}). Signing in again re-verifies with delegate.
+    {continueUrl ? (
+      <div class="card option">
+        <h2>Finish local handoff</h2>
+        <p>
+          Your identity was verified, but this machine cannot call Delegate’s
+          server exchange directly. Open Delegate in the browser to finish.
         </p>
-      )}
-    </div>
+        <p class="outcome">
+          <strong>After:</strong> session cookie is set → role picker or VIP/Admin.
+        </p>
+        <a class="btn btn-primary" href={continueUrl}>Continue sign-in on Delegate</a>
+      </div>
+    ) : (
+      <div class="options">
+        <article class="card option">
+          <h2>1. Profile probe (no login)</h2>
+          <p class="tag">Pre-login identity</p>
+          <p>
+            Asks Delegate who this browser already is — <code>unid</code> and
+            whether they are logged in on Delegate — <em>without</em> creating a
+            festival session (<code>GET /profile</code>).
+          </p>
+          <p class="outcome">
+            <strong>Cross-site limit:</strong> Delegate cookies are
+            <code>SameSite=Lax</code>, so a credentialed <code>fetch</code> or
+            <code>&lt;script src&gt;</code> from this demo origin will
+            <em>not</em> see your real Delegate profile (you get a throwaway
+            anonymous UNID). A short top-level <strong>popup</strong> to
+            <code>/profile/bridge</code> does send cookies; it
+            <code>postMessage</code>s the real profile back (allowlisted origin
+            only — not XSS).
+          </p>
+          <div class="btn-row">
+            <button
+              class="btn btn-ghost option-ghost"
+              type="button"
+              id="profile-fetch"
+              data-url={profileUrl}
+            >
+              Try credentialed fetch
+            </button>
+            <button
+              class="btn btn-primary"
+              type="button"
+              id="profile-probe"
+              data-url={profileBridgeUrl.toString()}
+            >
+              Look up via popup bridge
+            </button>
+          </div>
+          <pre id="profile-result" class="profile-result" hidden></pre>
+        </article>
+
+        <article class="card option">
+          <h2>2. Silent handoff</h2>
+          <p class="tag">Typical production flow</p>
+          <p>
+            Starts <code>/handoff/authorize</code> without
+            <code>prompt=consent</code>. If you already have a Delegate session,
+            you bounce straight back to this site — no Continue page, no Google
+            prompt.
+          </p>
+          <p class="outcome">
+            <strong>You’ll see:</strong> brief redirects through
+            <code>delegate.engine9.ai</code>, then this demo’s
+            <code>/choose-role</code> (or VIP/Admin if a role is already on the
+            session). First-time / logged-out users get Delegate’s Google popup
+            (one extra window).
+          </p>
+          <a class="btn btn-primary" href={silentHandoffUrl}>Start silent handoff</a>
+        </article>
+
+        <article class="card option">
+          <h2>3. Explicit consent</h2>
+          <p class="tag">Account confirm / switch</p>
+          <p>
+            Same handoff, but with <code>prompt=consent</code>. Delegate always
+            shows its login page so you can Continue as the current user, switch
+            Google accounts, or Sign out — even when already signed in.
+          </p>
+          <p class="outcome">
+            <strong>You’ll see:</strong> Delegate’s “Continue to …” page, then
+            (if needed) a Google popup, then this demo’s role picker or gated
+            pages. Use this when debugging identity switching.
+          </p>
+          <a class="btn btn-primary" href={consentHandoffUrl}>Start consent handoff</a>
+        </article>
+
+        <article class="card option">
+          <h2>4. Popup handoff</h2>
+          <p class="tag">Same as silent, in a window</p>
+          <p>
+            Opens silent handoff in a small browser window. Useful for sites that
+            prefer not to navigate the main tab away. Completes on
+            <code>/auth/delegate</code> in that window; close it and refresh if
+            the opener does not auto-update.
+          </p>
+          <p class="outcome">
+            <strong>You’ll see:</strong> main tab stays on this page; a second
+            window runs Delegate + optional Google popup (at most two windows).
+            After success, that window lands on role picker / VIP / Admin.
+          </p>
+          <button class="btn btn-primary" type="button" id="popup-handoff" data-url={silentHandoffUrl}>
+            Open silent handoff in popup
+          </button>
+        </article>
+
+        <article class="card option">
+          <h2>5. Direct Delegate login</h2>
+          <p class="tag">Debug Delegate only</p>
+          <p>
+            Opens Delegate’s own <code>/login</code> with no
+            <code>return_to</code> handoff back to this site. Signs you into
+            Delegate (UNID ↔ Google) but does <em>not</em> create a festival
+            session cookie.
+          </p>
+          <p class="outcome">
+            <strong>You’ll see:</strong> Delegate’s login UI and JSON success
+            after Google. This demo’s header stays logged out until you use
+            option 2 or 3. Option 1’s popup bridge will then report
+            <code>loggedIn: true</code>.
+          </p>
+          <a class="btn btn-ghost option-ghost" href={directDelegateLoginUrl} target="_blank" rel="noreferrer">
+            Open Delegate /login
+          </a>
+        </article>
+      </div>
+    )}
+
+    {session && !continueUrl && (
+      <p class="muted session-note">
+        You're currently logged in as <strong>{primaryRole(session).toUpperCase()}</strong>
+        (person_id {session.personId}). Signing in again re-verifies with Delegate;
+        this demo clears roles each login so you get the role picker again.
+      </p>
+    )}
   </div>
 </Layout>
 
+<script define:vars={{ delegateBase }}>
+  const profileResult = document.getElementById("profile-result");
+
+  function showProfile(label, data) {
+    if (!profileResult) return;
+    profileResult.hidden = false;
+    profileResult.textContent =
+      typeof label === "string"
+        ? label + "\n" + JSON.stringify(data, null, 2)
+        : JSON.stringify(data, null, 2);
+  }
+
+  document.getElementById("profile-fetch")?.addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    const url = btn instanceof HTMLElement ? btn.dataset.url : null;
+    if (!url) return;
+    try {
+      const res = await fetch(url, { credentials: "include" });
+      const data = await res.json();
+      showProfile(
+        "// credentialed fetch (SameSite=Lax → cookies usually NOT sent cross-site)",
+        data,
+      );
+    } catch (err) {
+      showProfile("// fetch failed", { error: String(err) });
+    }
+  });
+
+  document.getElementById("profile-probe")?.addEventListener("click", (e) => {
+    const btn = e.currentTarget;
+    const url = btn instanceof HTMLElement ? btn.dataset.url : null;
+    if (!url) return;
+    const popup = window.open(url, "delegate-profile", "popup=yes,width=420,height=320");
+    if (!popup) {
+      window.alert("Popup blocked — allow popups for this site to use the profile bridge.");
+    }
+  });
+
+  window.addEventListener("message", (event) => {
+    if (event.origin !== new URL(delegateBase).origin) return;
+    if (!event.data || event.data.type !== "delegate-profile") return;
+    const { type: _type, ...identity } = event.data;
+    showProfile("// popup bridge (top-level → cookies sent)", identity);
+  });
+
+  document.getElementById("popup-handoff")?.addEventListener("click", (e) => {
+    const btn = e.currentTarget;
+    const url = btn instanceof HTMLElement ? btn.dataset.url : null;
+    if (!url) return;
+    const popup = window.open(url, "delegate-handoff", "popup=yes,width=520,height=720");
+    if (!popup) window.location.assign(url);
+  });
+</script>
+
 <style>
-  .login-wrap { display: flex; justify-content: center; padding-top: 2rem; }
-  .login-card { max-width: 30rem; }
+  .login-wrap { max-width: 44rem; margin: 0 auto; padding-top: 0.5rem; }
+  .lede { color: var(--muted); margin: 0 0 1.5rem; }
+  .options { display: grid; gap: 1rem; }
+  .option h2 { margin: 0 0 0.35rem; font-size: 1.15rem; }
+  .option .tag {
+    display: inline-block;
+    margin: 0 0 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .option p { margin: 0 0 0.75rem; color: var(--muted); font-size: 0.95rem; }
+  .option .outcome { color: var(--text); }
+  .option .btn { margin-top: 0.35rem; text-align: center; width: 100%; box-sizing: border-box; }
+  .btn-row {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+  }
+  @media (min-width: 520px) {
+    .btn-row { grid-template-columns: 1fr 1fr; }
+  }
+  .btn-row .btn { margin-top: 0; }
+  .option-ghost { border-color: var(--border); }
+  .profile-result {
+    margin: 0.9rem 0 0;
+    padding: 0.75rem 0.9rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
   .notice {
     background: rgba(244, 114, 182, 0.12);
     border: 1px solid rgba(244, 114, 182, 0.4);
     border-radius: 8px;
     padding: 0.6rem 0.9rem;
+    margin-bottom: 1rem;
   }
   .notice.error {
     background: rgba(248, 113, 113, 0.12);
@@ -116,7 +328,6 @@ const loginUrl = delegateAuth().loginUrl({
     font-size: 0.85rem;
     color: var(--muted, #94a3b8);
   }
-  .buttons { display: grid; gap: 1rem; margin-top: 1.5rem; }
-  .buttons .btn { width: 100%; text-align: center; }
+  .session-note { margin-top: 1.5rem; }
   code { background: var(--surface-2); padding: 0.1rem 0.35rem; border-radius: 4px; }
 </style>
