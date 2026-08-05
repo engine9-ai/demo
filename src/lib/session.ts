@@ -6,20 +6,26 @@ import {
   type DelegateSession,
   type CredentialLevel,
 } from "@engine9/core/auth/delegate";
-import { delegateAuth } from "./engine9";
+import {
+  delegateAuth,
+  ADMIN_SEGMENT_ID,
+  VIP_SEGMENT_ID,
+  ROLE_REGISTRY,
+  ROLE_ORDER,
+} from "./engine9";
 
 /**
  * Thin cookie glue around @engine9/core's delegate auth. All real logic --
  * code exchange, person dedupe (id_type "delegate"), role lookup from
  * person_segment, token signing/verification -- lives in core; this file only
- * moves the signed token in and out of the Astro cookie jar and names the
- * demo's role policy (session-scoped via loadRolesOnLogin: false).
+ * moves the signed token in and out of the Astro cookie jar.
+ *
+ * Session.roles holds segment UUIDs (role_ids). Display labels come from
+ * ROLE_REGISTRY.
  */
 
-export type Role = "vip" | "admin";
-
 /** Session payload minted by core's createDelegateAuth().login(). */
-export type Session = DelegateSession<Role>;
+export type Session = DelegateSession;
 export type { CredentialLevel };
 
 /** Astro/Lucia community convention; cookie glue stays here — core is host-agnostic. */
@@ -50,15 +56,22 @@ export function clearSession(cookies: AstroCookies): void {
 
 /** Can this session see VIP content? Admins can, so they can preview it. */
 export const canAccessVip = (session: Session | null): boolean =>
-  sessionHasRole(session, "vip", "admin");
+  sessionHasRole(session, VIP_SEGMENT_ID, ADMIN_SEGMENT_ID);
 
 export const isAdmin = (session: Session | null): boolean =>
-  sessionHasRole(session, "admin");
+  sessionHasRole(session, ADMIN_SEGMENT_ID);
 
 /** Logged in via delegate but hasn't picked (or been granted) a role yet. */
 export const needsRole = (session: Session | null): boolean =>
   sessionNeedsRole(session);
 
-/** Highest role, for display. */
-export const primaryRole = (session: Session | null): Role | "member" =>
-  sessionPrimaryRole(session, ["admin", "vip"]) ?? "member";
+/**
+ * CSS/badge label for the highest role (admin | vip | member).
+ * Session stores UUIDs; this maps back to a stable lowercase display key.
+ */
+export const primaryRole = (session: Session | null): string => {
+  const roleId = sessionPrimaryRole(session, [...ROLE_ORDER]);
+  if (!roleId) return "member";
+  const name = ROLE_REGISTRY[roleId as keyof typeof ROLE_REGISTRY]?.name;
+  return name ? name.toLowerCase() : "member";
+};

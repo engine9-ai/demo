@@ -23,12 +23,25 @@ export const ADMIN_SEGMENT_ID = "4f4ac886-f53d-48e1-b4bd-5a98eb48cc6f";
 /** Demo API key seeded in 0003_engine9.sql -- server-side only, never sent to the browser */
 export const DEMO_API_KEY = "e9k_0ca7302713d70f5d130cf52cbf9167f0ea1a45ef";
 
-/** Role -> segment id. Roles ARE segments in this demo (ordered admin-first).
- * These names (vip/admin) are demo site policy only — not defined by core or Delegate. */
-export const ROLE_SEGMENTS = {
-  admin: ADMIN_SEGMENT_ID,
-  vip: VIP_SEGMENT_ID,
+/**
+ * Role registry keyed by segment UUID (role_id === segment_id).
+ * Display names are site policy only — not defined by core or Delegate.
+ */
+export const ROLE_REGISTRY = {
+  [ADMIN_SEGMENT_ID]: {
+    name: "Admin",
+    scopes: ["*"],
+    requiredAuth: {},
+  },
+  [VIP_SEGMENT_ID]: {
+    name: "VIP",
+    scopes: ["data:read"],
+    requiredAuth: {},
+  },
 } as const;
+
+/** Admin-first order for sessionPrimaryRole. */
+export const ROLE_ORDER = [ADMIN_SEGMENT_ID, VIP_SEGMENT_ID] as const;
 
 /** The PersonWorker runs the full inbound person pipeline against D1. */
 export function createPersonWorker() {
@@ -49,7 +62,7 @@ export function delegateAuth() {
     sessionSecret: env.SESSION_SECRET,
     pluginId: FESTIVAL_PLUGIN_ID,
     remoteInputId: "delegate-login",
-    roleSegments: ROLE_SEGMENTS,
+    roles: ROLE_REGISTRY,
     // Demo session roles: every login starts empty so /choose-role re-prompts.
     loadRolesOnLogin: false,
   });
@@ -70,9 +83,11 @@ export function createEngine9Api() {
     worker,
     keyStore,
     logger,
+    delegateAuth: delegateAuth(),
     config: {
       pluginId: FESTIVAL_PLUGIN_ID,
       defaultRemoteInputId: "festival-website",
+      roles: ROLE_REGISTRY,
       upsertTables: ["person_email", "person_phone", "person_address", "person_segment"],
       reads: {
         // VIP-only sets, gated by VIP segment membership; the person_id is
