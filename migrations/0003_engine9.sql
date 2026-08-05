@@ -388,13 +388,13 @@ DROP TABLE demo_person;
 INSERT INTO plugin (id, path, name, table_prefix)
 VALUES ('86dfc4a8-318b-51e6-9f25-d9648f963609', '@demo/festival-website', 'Festival Website', '');
 
--- Demo API key: e9k_0ca7302713d70f5d130cf52cbf9167f0ea1a45ef (sha-256 stored).
+-- Demo API key: e9key_0ca7302713d70f5d130cf52cbf9167f0ea1a45ef (sha-256 stored).
 -- Rotate for any non-demo deployment: npx e9core create-api-key
 INSERT INTO api_key (id, name, key_hash, scopes, active)
 VALUES (
   'f31c2c8f-0296-4dd8-9b3c-2b0e4f4dbe1a',
   'festival-demo-website',
-  '490ed875f0704448d4b2f8a33db75480995f1614432860be9de7bd13a3a0b989',
+  'eb6638ecc09eb068be0c6abccde309c25f40ab0fc6bf66da94489ad67c4aa9e1',
   '["people:write","tables:write","data:read"]',
   1
 );

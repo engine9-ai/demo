@@ -21,7 +21,7 @@ export const VIP_SEGMENT_ID = "5f2ab45c-0a39-4939-a2af-c1fcc58f37ff";
 /** The Admin segment seeded in 0004_admin_segment.sql; grants /admin access */
 export const ADMIN_SEGMENT_ID = "4f4ac886-f53d-48e1-b4bd-5a98eb48cc6f";
 /** Demo API key seeded in 0003_engine9.sql -- server-side only, never sent to the browser */
-export const DEMO_API_KEY = "e9k_0ca7302713d70f5d130cf52cbf9167f0ea1a45ef";
+export const DEMO_API_KEY = "e9key_0ca7302713d70f5d130cf52cbf9167f0ea1a45ef";
 
 /**
  * Role registry keyed by segment UUID (role_id === segment_id).
@@ -30,7 +30,7 @@ export const DEMO_API_KEY = "e9k_0ca7302713d70f5d130cf52cbf9167f0ea1a45ef";
 export const ROLE_REGISTRY = {
   [ADMIN_SEGMENT_ID]: {
     name: "Admin",
-    scopes: ["*"],
+    scopes: ["admin"],
     requiredAuth: {},
   },
   [VIP_SEGMENT_ID]: {
@@ -70,8 +70,8 @@ export function delegateAuth() {
 
 export function createEngine9Api() {
   const worker = createPersonWorker();
-  // API keys live in the api_key D1 table (swap for KVApiKeyStore + a KV
-  // namespace without touching the endpoints)
+  // Canonical: api_key table via SqlApiKeyStore (works on D1/SQLite/MySQL).
+  // Cloudflare KVApiKeyStore is optional and unused here.
   const keyStore = new SqlApiKeyStore({ worker });
   // Cloudflare-style batch logging. The demo has no R2 bucket, so each
   // request's batch goes to the Worker log stream (wrangler tail /

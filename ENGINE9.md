@@ -15,7 +15,7 @@ What the client provides here:
 | `POST /api/upsert/:table` | Direct upserts to allow-listed person-related tables (e.g. `person_segment` for event attendance / entitlements) |
 | `GET /api/read/:name` | Named reads of site content, optionally gated by `person_segment` membership. The `person_id` comes from the caller (the delegate-style session) — the client never looks it up |
 
-All writes require an API key (`Authorization: Bearer e9k_...`); every
+All writes require an API key (`Authorization: Bearer e9key_...`); every
 modification is written to the database and then logged through the client's
 batch logger (here: the Worker log stream; with an R2 bucket, batches would be
 written to R2).
@@ -88,7 +88,7 @@ Also in `0003_engine9.sql`:
   from `getPluginUUID('engine9.demo', 'festival-website')`) — everything
   written through the API is attributed to it;
 - an `api_key` row. The demo key is
-  `e9k_0ca7302713d70f5d130cf52cbf9167f0ea1a45ef` (only its SHA-256 is
+  `e9key_0ca7302713d70f5d130cf52cbf9167f0ea1a45ef` (only its SHA-256 is
   stored). **Rotate this for any non-demo deployment**:
 
   ```bash
@@ -129,7 +129,7 @@ npm run preview             # build + wrangler dev
 ```
 
 ```bash
-KEY=e9k_0ca7302713d70f5d130cf52cbf9167f0ea1a45ef
+KEY=e9key_0ca7302713d70f5d130cf52cbf9167f0ea1a45ef
 curl localhost:8787/api/ok
 # create a person through the transform pipeline
 curl -X POST localhost:8787/api/people -H "Authorization: Bearer $KEY" \

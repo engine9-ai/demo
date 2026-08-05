@@ -5,7 +5,7 @@ import { createEngine9Api } from "../../lib/engine9";
  * Engine9 client API, served under /api by the same Worker as the site:
  *
  *   GET  /api/ok
- *   POST /api/people                 (Authorization: Bearer e9k_...)
+ *   POST /api/people                 (Authorization: Bearer e9key_...)
  *   POST /api/upsert/:table
  *   GET  /api/read/vip-performances?person_id=...
  */
