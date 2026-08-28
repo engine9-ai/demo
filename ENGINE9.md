@@ -56,7 +56,7 @@ else was needed.
 Generate the DDL with the client (no server required):
 
 ```bash
-npx e9core sqlite-ddl > engine9-ddl.sql
+npx e9core sqlite-ddl --schema @engine9/interfaces/person > engine9-ddl.sql
 ```
 
 That DDL (idempotent `create table if not exists`) is the middle section of
