@@ -1,9 +1,9 @@
 # Deploying @engine9/core on this site
 
-This demo doubles as the reference installation of the Engine9 client on a
+This demo doubles as the reference installation of the engine9 client on a
 "real" website. The D1 database (`festival-db`) **is** the engine9 database:
-migration `0003_engine9.sql` installed the standard Engine9 interface tables
-alongside the site's own content tables, and the site now serves the Engine9
+migration `0003_engine9.sql` installed the standard engine9 interface tables
+alongside the site's own content tables, and the site now serves the engine9
 client API under `/api` from the same Worker.
 
 What the client provides here:

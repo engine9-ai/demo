@@ -82,9 +82,9 @@ blocked, `/login` shows a **Continue sign-in on Delegate** link through
 ## How it's put together
 
 ```
-migrations/            SQL schema + seed (person, ticket, artist, Engine9 tables, segments)
+migrations/            SQL schema + seed (person, ticket, artist, engine9 tables, segments)
 src/middleware.ts      Server-side gate for /vip/* and /admin/*
-src/lib/engine9.ts     All Engine9 wiring: plugin/segment ids, delegateAuth() config
+src/lib/engine9.ts     All engine9 wiring: plugin/segment ids, delegateAuth() config
 src/lib/session.ts     Cookie glue around core's signed delegate session
 src/lib/db.ts          D1/SQLite access + row types
 src/pages/             Public pages, /login, /choose-role, /vip, /admin, auth endpoints
@@ -95,10 +95,10 @@ Every page is server-rendered (`output: "server"`); there is no client-side
 gating anywhere. All per-person rows (`person`, `ticket`) are keyed by an
 integer `person_id`.
 
-## Engine9 client
+## engine9 client
 
 The D1 database is also an **engine9 database**: migration
-`0003_engine9.sql` installs the standard Engine9 interface tables (`person`,
+`0003_engine9.sql` installs the standard engine9 interface tables (`person`,
 `person_email`, `person_segment`, ...) and the site serves the
 `@engine9/core` API under `/api` — API-key-authenticated people creation,
 person-related upserts, and segment-gated content reads. See
