@@ -56,7 +56,7 @@ else was needed.
 Generate the DDL with the client (no server required):
 
 ```bash
-npx e9core sqlite-ddl --schema @engine9/interfaces/person > engine9-ddl.sql
+npx e9 sqlite-ddl --schema @engine9/interfaces/person > engine9-ddl.sql
 ```
 
 That DDL (idempotent `create table if not exists`) is the middle section of
@@ -93,7 +93,7 @@ Also in `0003_engine9.sql`:
 
   ```bash
   # prints the key once (stderr) and the INSERT statement (stdout)
-  npx e9core create-api-key --print-sql --name my-website \
+  npx e9 create-api-key --print-sql --name my-website \
     --scopes people:write,tables:write,data:read > new-key.sql
   npx wrangler d1 execute festival-db --remote --file new-key.sql
   # deactivate the demo key
