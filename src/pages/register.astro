@@ -11,9 +11,10 @@ const personId = Astro.url.searchParams.get("person_id");
     <div class="card register-card">
       <h1>Register</h1>
       <p class="muted">
-        Sign up with your name and email. Your details are written through the
-        Engine9 client API (<code>POST /api/people</code>) into the festival
-        database.
+        Sign up with your name and email. This is a Level 1 public form:
+        <code>POST /api/people</code> uses an <code>e9publickey_</code>
+        (scope <code>public</code> + <code>people:write</code>), not the
+        private demo key.
       </p>
 
       {ok && (

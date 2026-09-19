@@ -16,17 +16,16 @@ npm run dev
 
 ### Developing against a local `@engine9/core` checkout
 
-`package.json` depends on `@engine9/core` from GitHub (`github:engine9-ai/core`)
-until the package is published to npm; then switch the dependency to
-`"^0.1.0"`. To iterate on a sibling `core` repo instead:
+`package.json` depends on sibling checkouts:
 
-```bash
-cd ../core && npm link
-cd ../demo && npm link @engine9/core
+```json
+"@engine9/core": "file:../core",
+"@engine9/id": "file:../id"
 ```
 
-Re-run `npm link @engine9/core` after `npm install` or `npm ci` in this repo,
-since a fresh install restores the registry copy.
+Build `@engine9/id` (`cd ../id && npm run build`) before `npm install` here
+if `dist/` is missing. After the packages are published, switch those
+entries to version ranges.
 
 Open **http://localhost:3000** (or **http://localhost:3001** /
 **http://localhost:3002** if 3000 is taken). Set `PORT` in `.env` to pin a
@@ -55,9 +54,9 @@ This site only wires config and HTTP endpoints:
 
 | Endpoint | Purpose |
 | --- | --- |
-| `GET /login` | Starts delegate login (`return_to` → `/auth/delegate`) |
-| `GET /auth/delegate` | Callback: exchanges `?delegate_code=` and sets the session cookie |
-| `GET /auth/role` | Demo-only: grants VIP or Admin after first login |
+| `GET /login` | Identity Token (`/identity/authorize`) plus legacy handoff options |
+| `GET /auth/delegate` | Callback: Identity Token (`?delegate_token=`), or legacy `?delegate_code=` / `?delegate_bridge=` |
+| `POST /auth/role` | Demo-only: grants VIP or Admin after first login |
 | `GET /choose-role` | First-time users pick VIP or Admin |
 | `POST /auth/logout` (or site logout) | Clears the local session cookie |
 
@@ -68,10 +67,18 @@ For how delegate handoff, person resolution, roles-as-segments, and signed
 sessions work, see [`@engine9/core` README — Delegate
 authentication](../core/README.md#delegate-authentication).
 
-Local development: copy `.env.example` to `.env` and set `DELEGATE_SHARED_SECRET`
-to a value accepted by production Delegate (comma-separated secrets support a
-dev entry). Point `DELEGATE_URL` at `https://delegate.engine9.ai` — you do
-**not** need a local Delegate process.
+### Roles
+
+| Role | Segment | Scopes | `requiredAuth` |
+| --- | --- | --- | --- |
+| VIP | `5f2ab45c-…` | `data:read` | `minLevel: 1` |
+| Admin | `4f4ac886-…` | `admin` | `minLevel: 3` |
+
+Identity flow: [`docs/identity-flow.md`](docs/identity-flow.md).
+
+Local development: copy `.env.example` to `.env`. `SESSION_SECRET` is required.
+`DELEGATE_SHARED_SECRET` is optional when using Identity Tokens (JWT); still
+needed for legacy handoff. Point `DELEGATE_URL` at `https://delegate.engine9.ai`.
 
 For `localhost` / `127.0.0.1` callbacks, Delegate returns a signed
 `?delegate_bridge=` token in the browser (Bot Fight cannot challenge that
@@ -84,7 +91,8 @@ blocked, `/login` shows a **Continue sign-in on Delegate** link through
 ```
 migrations/            SQL schema + seed (person, ticket, artist, engine9 tables, segments)
 src/middleware.ts      Server-side gate for /vip/* and /admin/*
-src/lib/engine9.ts     All engine9 wiring: plugin/segment ids, delegateAuth() config
+src/lib/roles.ts       Segment UUIDs, public/private API keys, role minLevel
+src/lib/engine9.ts     PersonWorker + delegateAuth() + createApi wiring
 src/lib/session.ts     Cookie glue around core's signed delegate session
 src/lib/db.ts          D1/SQLite access + row types
 src/pages/             Public pages, /login, /choose-role, /vip, /admin, auth endpoints

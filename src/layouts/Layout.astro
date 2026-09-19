@@ -46,9 +46,11 @@ const navLinks = [
             <span
               class:list={["badge", primaryRole(session)]}
               title={session.auth?.signInProvider
-                ? `via delegate · ${session.auth.signInProvider}${session.auth.twoFactor ? " · 2FA" : ""}`
-                : "via delegate"}
-            >{primaryRole(session).toUpperCase()}</span>
+                ? `via delegate · ${session.auth.signInProvider}${session.auth.twoFactor ? " · 2FA" : ""}${session.level != null ? ` · Level ${session.level}` : ""}`
+                : session.level != null
+                  ? `via delegate · Level ${session.level}`
+                  : "via delegate"}
+            >{primaryRole(session).toUpperCase()}{session.level != null ? ` · L${session.level}` : ""}</span>
             <form method="post" action="/auth/logout">
               <button class="btn btn-ghost" type="submit">Log out</button>
             </form>

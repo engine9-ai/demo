@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { createEngine9Api, DEMO_API_KEY } from "../../lib/engine9";
+import { createEngine9Api, DEMO_PUBLIC_API_KEY } from "../../lib/engine9";
 
 function splitName(name: string) {
   const trimmed = name.trim();
@@ -28,7 +28,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   const apiRequest = new Request("http://localhost/api/people", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${DEMO_API_KEY}`,
+      Authorization: `Bearer ${DEMO_PUBLIC_API_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({

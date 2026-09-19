@@ -161,20 +161,32 @@ Login is provided by the shared **delegate** deployment via
 `@engine9/core/auth/delegate` (`createDelegateAuth`). This site only wires
 config and endpoints:
 
-- `src/lib/engine9.ts` — `delegateAuth()` config (delegate URL, shared secret,
-  session secret, plugin id, role→segment map)
-- `GET /auth/delegate` — callback that calls `login(code)` and sets the cookie
-- `GET /auth/role` + `/choose-role` — demo-only first-login role picker
+- `src/lib/roles.ts` — VIP (`minLevel: 1`) and Admin (`minLevel: 3`)
+- `src/lib/engine9.ts` — `delegateAuth()` config (delegate URL, optional
+  shared secret, session secret, plugin id, role registry)
+- `GET /auth/delegate` — callback: Identity Token (`?delegate_token=`) or
+  legacy `?delegate_code=` / `?delegate_bridge=`
+- `POST /auth/role` + `/choose-role` — demo-only first-login role picker
 - `src/middleware.ts` — gates `/vip` and `/admin` from the session
 
 See [`@engine9/core` README — Delegate
-authentication](../core/README.md#delegate-authentication) for the handoff
-flow, person resolution, and session signing.
+authentication](../core/README.md#delegate-authentication) and
+[`docs/identity-flow.md`](docs/identity-flow.md).
 
-Secrets: `DELEGATE_SHARED_SECRET` (must match the delegate deployment) and
-`SESSION_SECRET`, set via `.env` locally and `wrangler secret put` in
-production. `DELEGATE_URL` is a wrangler var (`https://delegate.engine9.ai`),
-overridable in `.env` for a local delegate.
+`SESSION_SECRET` is required. `DELEGATE_SHARED_SECRET` is optional when
+using Identity Tokens; still needed for legacy handoff. `DELEGATE_URL` is
+a wrangler var (`https://delegate.engine9.ai`).
+
+### Stage 9 — Identity Tokens and `@engine9/id`
+
+Preferred login is `GET /identity/authorize` (JWT, public JWKS). The login
+page also uses `@engine9/id` for a popup (`requestIdentity`) that lands on
+the same `/auth/delegate` callback. Registration uses the seeded
+`e9publickey_` on `POST /people`.
+
+`auth.identityUrl({ returnTo, minLevel, responseMode: "query" })` builds
+the authorize URL. `loginUrl()` remains the legacy `/handoff/authorize`
+path.
 
 ## What stays on the engine9 server
 

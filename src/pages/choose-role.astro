@@ -1,11 +1,16 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { ADMIN_SEGMENT_ID, VIP_SEGMENT_ID } from "../lib/roles";
+import { canClaimRole } from "../lib/session";
 
 // Shown after every delegate login while the demo session has no role yet
 // (loadRolesOnLogin: false). Choosing a role writes it onto the session and
 // updates person_segment for API gating.
 const session = Astro.locals.session;
 if (!session) return Astro.redirect("/login");
+const levelError = Astro.url.searchParams.get("error") === "level";
+const canVip = canClaimRole(session, VIP_SEGMENT_ID);
+const canAdmin = canClaimRole(session, ADMIN_SEGMENT_ID);
 ---
 
 <Layout title="Choose your role">
@@ -16,22 +21,30 @@ if (!session) return Astro.redirect("/login");
 
       <p class="muted">
         You're signed in through <strong>delegate</strong> and recognized as
-        <code>person_id {session.personId}</code>. Pick how you'd like to use
-        this demo session — VIP or Admin. Logout clears the session, so the
-        next login will ask again.
+        <code>person_id {session.personId}</code>
+        {session.level != null && <> at Identity Level <strong>{session.level}</strong></>}.
+        Pick how you'd like to use this demo session — VIP (Level 1) or Admin
+        (Level 3). Logout clears the session, so the next login will ask again.
       </p>
+
+      {levelError && (
+        <p class="notice err">
+          That role needs a higher Identity Level. VIP needs Level 1; Admin
+          needs Level 3 (trusted provider).
+        </p>
+      )}
 
       <div class="buttons">
         <form method="post" action="/auth/role">
           <input type="hidden" name="role" value="vip" />
-          <button class="btn btn-primary" type="submit">Join as VIP</button>
-          <p class="who">Access the VIP Lounge and VIP-only sets</p>
+          <button class="btn btn-primary" type="submit" disabled={!canVip}>Join as VIP</button>
+          <p class="who">Level 1 · VIP Lounge and VIP-only sets</p>
         </form>
 
         <form method="post" action="/auth/role">
           <input type="hidden" name="role" value="admin" />
-          <button class="btn btn-primary admin" type="submit">Join as Admin</button>
-          <p class="who">Manage artists, schedule, tickets, and people</p>
+          <button class="btn btn-primary admin" type="submit" disabled={!canAdmin}>Join as Admin</button>
+          <p class="who">Level 3 · manage artists, schedule, tickets, and people</p>
         </form>
       </div>
     </div>
@@ -53,5 +66,13 @@ if (!session) return Astro.redirect("/login");
   .buttons .btn { width: 100%; }
   .btn.admin { background: linear-gradient(120deg, #10b981, #34d399); }
   .who { font-size: 0.8rem; color: var(--muted); margin: 0.4rem 0 0; text-align: center; }
+  .notice.err {
+    background: rgba(244, 114, 182, 0.12);
+    border: 1px solid rgba(244, 114, 182, 0.4);
+    border-radius: 8px;
+    padding: 0.6rem 0.9rem;
+    margin: 1rem 0 0;
+  }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
   code { background: var(--surface-2); padding: 0.1rem 0.35rem; border-radius: 4px; }
 </style>

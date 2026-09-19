@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { ADMIN_SEGMENT_ID, VIP_SEGMENT_ID, delegateAuth } from "../../lib/engine9";
-import { getSession, setSession } from "../../lib/session";
+import { canClaimRole, getSession, setSession } from "../../lib/session";
 
 /**
  * Role selection (demo policy). role_id is the segment UUID. Core's changeRole
@@ -23,6 +23,9 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     role === "admin" ? ADMIN_SEGMENT_ID : role === "vip" ? VIP_SEGMENT_ID : null;
   if (!roleId) {
     return new Response("Unknown role", { status: 400 });
+  }
+  if (!canClaimRole(session, roleId)) {
+    return redirect("/choose-role?error=level", 303);
   }
 
   const { session: next } = await delegateAuth().changeRole({

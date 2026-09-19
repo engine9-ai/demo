@@ -6,13 +6,14 @@ import {
   type DelegateSession,
   type CredentialLevel,
 } from "@engine9/core/auth/delegate";
+import { meetsRequiredAuth } from "@engine9/core/auth/policy";
+import { delegateAuth } from "./engine9";
 import {
-  delegateAuth,
   ADMIN_SEGMENT_ID,
   VIP_SEGMENT_ID,
   ROLE_REGISTRY,
   ROLE_ORDER,
-} from "./engine9";
+} from "./roles";
 
 /**
  * Thin cookie glue around @engine9/core's delegate auth. All real logic --
@@ -54,12 +55,41 @@ export function clearSession(cookies: AstroCookies): void {
   cookies.delete("festival_session", { path: "/" });
 }
 
+/** Prefer the JWT `level`; infer from legacy handoff auth when missing. */
+function inferredLevel(session: Session): number | undefined {
+  if (typeof session.level === "number") return session.level;
+  const auth = session.auth;
+  if (!auth) return undefined;
+  if (auth.twoFactor) return 4;
+  if (auth.signInProvider === "google.com") return 3;
+  if (session.email) return 2;
+  return 1;
+}
+
+function credentialLevel(session: Session | null) {
+  if (!session) return {};
+  return { ...(session.auth || {}), level: inferredLevel(session) };
+}
+
+function roleAuthOk(session: Session | null, roleId: string): boolean {
+  const role = ROLE_REGISTRY[roleId as keyof typeof ROLE_REGISTRY];
+  if (!role) return false;
+  return meetsRequiredAuth(role.requiredAuth, credentialLevel(session));
+}
+
 /** Can this session see VIP content? Admins can, so they can preview it. */
-export const canAccessVip = (session: Session | null): boolean =>
-  sessionHasRole(session, VIP_SEGMENT_ID, ADMIN_SEGMENT_ID);
+export const canAccessVip = (session: Session | null): boolean => {
+  if (sessionHasRole(session, ADMIN_SEGMENT_ID) && roleAuthOk(session, ADMIN_SEGMENT_ID)) {
+    return true;
+  }
+  return sessionHasRole(session, VIP_SEGMENT_ID) && roleAuthOk(session, VIP_SEGMENT_ID);
+};
 
 export const isAdmin = (session: Session | null): boolean =>
-  sessionHasRole(session, ADMIN_SEGMENT_ID);
+  sessionHasRole(session, ADMIN_SEGMENT_ID) && roleAuthOk(session, ADMIN_SEGMENT_ID);
+
+export const canClaimRole = (session: Session | null, roleId: string): boolean =>
+  Boolean(session) && roleAuthOk(session, roleId);
 
 /** Logged in via delegate but hasn't picked (or been granted) a role yet. */
 export const needsRole = (session: Session | null): boolean =>

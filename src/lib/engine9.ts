@@ -5,6 +5,21 @@ import { createDelegateAuth } from "@engine9/core/auth/delegate";
 import { BatchLogger } from "@engine9/core/logging";
 import { createApi } from "@engine9/core/api";
 
+export {
+  ADMIN_SEGMENT_ID,
+  DEMO_API_KEY,
+  DEMO_PUBLIC_API_KEY,
+  FESTIVAL_PLUGIN_ID,
+  ROLE_ORDER,
+  ROLE_REGISTRY,
+  VIP_SEGMENT_ID,
+} from "./roles";
+import {
+  FESTIVAL_PLUGIN_ID,
+  ROLE_REGISTRY,
+  VIP_SEGMENT_ID,
+} from "./roles";
+
 /**
  * Engine9 client wiring for the festival demo.
  *
@@ -13,35 +28,6 @@ import { createApi } from "@engine9/core/api";
  * the plugin row, a demo API key, and a VIP segment. The client API exposes
  * people writes, person-related upserts, and segment-gated reads under /api.
  */
-
-/** getPluginUUID('engine9.demo', 'festival-website') -- seeded in 0003_engine9.sql */
-export const FESTIVAL_PLUGIN_ID = "86dfc4a8-318b-51e6-9f25-d9648f963609";
-/** The VIP segment seeded in 0003_engine9.sql; gates VIP content reads */
-export const VIP_SEGMENT_ID = "5f2ab45c-0a39-4939-a2af-c1fcc58f37ff";
-/** The Admin segment seeded in 0004_admin_segment.sql; grants /admin access */
-export const ADMIN_SEGMENT_ID = "4f4ac886-f53d-48e1-b4bd-5a98eb48cc6f";
-/** Demo API key seeded in 0003_engine9.sql -- server-side only, never sent to the browser */
-export const DEMO_API_KEY = "e9key_0ca7302713d70f5d130cf52cbf9167f0ea1a45ef";
-
-/**
- * Role registry keyed by segment UUID (role_id === segment_id).
- * Display names are site policy only — not defined by core or Delegate.
- */
-export const ROLE_REGISTRY = {
-  [ADMIN_SEGMENT_ID]: {
-    name: "Admin",
-    scopes: ["admin"],
-    requiredAuth: {},
-  },
-  [VIP_SEGMENT_ID]: {
-    name: "VIP",
-    scopes: ["data:read"],
-    requiredAuth: {},
-  },
-} as const;
-
-/** Admin-first order for sessionPrimaryRole. */
-export const ROLE_ORDER = [ADMIN_SEGMENT_ID, VIP_SEGMENT_ID] as const;
 
 /** The PersonWorker runs the full inbound person pipeline against D1. */
 export function createPersonWorker() {

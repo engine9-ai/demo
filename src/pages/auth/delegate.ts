@@ -32,13 +32,19 @@ function loginFailureRedirect(failure: DelegateLoginFailure) {
  * we send the developer back to /login with a continue URL to finish in-browser.
  */
 export const GET: APIRoute = async ({ url, cookies, redirect }) => {
+  const identityToken = url.searchParams.get("delegate_token");
   const code = url.searchParams.get("delegate_code");
   const bridge = url.searchParams.get("delegate_bridge");
   const returnTo = new URL("/auth/delegate", url.origin).toString();
 
   let session: Session;
   try {
-    if (bridge) {
+    if (identityToken) {
+      ({ session } = await delegateAuth().login(identityToken, {
+        returnTo,
+        site: url.origin,
+      }));
+    } else if (bridge) {
       ({ session } = await delegateAuth().login(bridge, { returnTo }));
     } else if (code) {
       ({ session } = await delegateAuth().login(code, { returnTo }));

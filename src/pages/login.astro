@@ -19,6 +19,23 @@ const delegateBase = env.DELEGATE_URL || "https://delegate.engine9.ai";
 /** Production-style handoff: skip Delegate UI when already signed in there. */
 const silentHandoffUrl = auth.loginUrl({ returnTo });
 
+/** Preferred: Identity Token (JWT) via /identity/authorize, query mode for this SSR callback. */
+const identityUrl = auth.identityUrl({
+  returnTo,
+  minLevel: 1,
+  responseMode: "query",
+});
+const identityConsentUrl = auth.identityUrl({
+  returnTo,
+  minLevel: 1,
+  prompt: "consent",
+  responseMode: "query",
+});
+const identityBridgeUrl = new URL("/identity/bridge", delegateBase);
+identityBridgeUrl.searchParams.set("site", Astro.url.origin);
+identityBridgeUrl.searchParams.set("return_to", returnTo);
+identityBridgeUrl.searchParams.set("min_level", "0");
+
 /** Explicit consent: always show Delegate Continue / switch-account UI. */
 const consentHandoffUrl = auth.loginUrl({ returnTo, prompt: "consent" });
 
@@ -33,7 +50,7 @@ profileBridgeUrl.searchParams.set("origin", Astro.url.origin);
 ---
 
 <Layout title="Log in">
-  <div class="login-wrap">
+  <div class="login-wrap" data-delegate-url={delegateBase}>
     <h1>Log in</h1>
     <p class="lede">
       This page demonstrates how a core site can use the shared
@@ -91,7 +108,29 @@ profileBridgeUrl.searchParams.set("origin", Astro.url.origin);
     ) : (
       <div class="options">
         <article class="card option">
-          <h2>1. Profile probe (no login)</h2>
+          <h2>1. Identity Token (preferred)</h2>
+          <p class="tag">JWT · no shared secret</p>
+          <p>
+            Starts <code>/identity/authorize</code> with <code>min_level=1</code>
+            and <code>response_mode=query</code>. Delegate issues a signed
+            Identity Token; this Site verifies it via JWKS.
+          </p>
+          <p class="outcome">
+            <strong>You’ll see:</strong> a Profile chooser (or silent continue),
+            then this demo’s role picker. VIP requires Level 1; Admin requires
+            Level 3.
+          </p>
+          <div class="btn-row">
+            <a class="btn btn-primary" href={identityUrl}>Request identity</a>
+            <a class="btn btn-ghost option-ghost" href={identityConsentUrl}>Chooser / consent</a>
+            <button class="btn btn-ghost option-ghost" type="button" id="identity-id-popup">
+              Popup via @engine9/id
+            </button>
+          </div>
+        </article>
+
+        <article class="card option">
+          <h2>2. Profile probe (no login)</h2>
           <p class="tag">Pre-login identity</p>
           <p>
             Asks Delegate who this browser already is — <code>unid</code> and
@@ -125,12 +164,20 @@ profileBridgeUrl.searchParams.set("origin", Astro.url.origin);
             >
               Look up via popup bridge
             </button>
+            <button
+              class="btn btn-ghost option-ghost"
+              type="button"
+              id="identity-probe"
+              data-url={identityBridgeUrl.toString()}
+            >
+              Identity bridge (Level 0)
+            </button>
           </div>
           <pre id="profile-result" class="profile-result" hidden></pre>
         </article>
 
         <article class="card option">
-          <h2>2. Silent handoff</h2>
+          <h2>3. Silent handoff (legacy)</h2>
           <p class="tag">Typical production flow</p>
           <p>
             Starts <code>/handoff/authorize</code> without
@@ -149,7 +196,7 @@ profileBridgeUrl.searchParams.set("origin", Astro.url.origin);
         </article>
 
         <article class="card option">
-          <h2>3. Explicit consent</h2>
+          <h2>4. Explicit consent (legacy)</h2>
           <p class="tag">Account confirm / switch</p>
           <p>
             Same handoff, but with <code>prompt=consent</code>. Delegate always
@@ -165,7 +212,7 @@ profileBridgeUrl.searchParams.set("origin", Astro.url.origin);
         </article>
 
         <article class="card option">
-          <h2>4. Popup handoff</h2>
+          <h2>5. Popup handoff (legacy)</h2>
           <p class="tag">Same as silent, in a window</p>
           <p>
             Opens silent handoff in a small browser window. Useful for sites that
@@ -184,7 +231,7 @@ profileBridgeUrl.searchParams.set("origin", Astro.url.origin);
         </article>
 
         <article class="card option">
-          <h2>5. Direct Delegate login</h2>
+          <h2>6. Direct Delegate login</h2>
           <p class="tag">Debug Delegate only</p>
           <p>
             Opens Delegate’s own <code>/login</code> with no
@@ -195,7 +242,7 @@ profileBridgeUrl.searchParams.set("origin", Astro.url.origin);
           <p class="outcome">
             <strong>You’ll see:</strong> Delegate’s login UI and JSON success
             after Google. This demo’s header stays logged out until you use
-            option 2 or 3. Option 1’s popup bridge will then report
+            option 2 or 3.             Option 2’s popup bridge will then report
             <code>loggedIn: true</code>.
           </p>
           <a class="btn btn-ghost option-ghost" href={directDelegateLoginUrl} target="_blank" rel="noreferrer">
@@ -255,6 +302,11 @@ profileBridgeUrl.searchParams.set("origin", Astro.url.origin);
 
   window.addEventListener("message", (event) => {
     if (event.origin !== new URL(delegateBase).origin) return;
+    if (event.data?.type === "delegate-identity") {
+      const { type: _t, ...payload } = event.data;
+      showProfile("// identity bridge (JWT or error)", payload);
+      return;
+    }
     if (!event.data || event.data.type !== "delegate-profile") return;
     const { type: _type, ...identity } = event.data;
     showProfile("// popup bridge (top-level → cookies sent)", identity);
@@ -266,6 +318,50 @@ profileBridgeUrl.searchParams.set("origin", Astro.url.origin);
     if (!url) return;
     const popup = window.open(url, "delegate-handoff", "popup=yes,width=520,height=720");
     if (!popup) window.location.assign(url);
+  });
+</script>
+
+<script>
+  import { createEngine9Id } from "@engine9/id";
+
+  const wrap = document.querySelector(".login-wrap");
+  const delegateUrl =
+    wrap instanceof HTMLElement
+      ? wrap.dataset.delegateUrl || "https://delegate.engine9.ai"
+      : "https://delegate.engine9.ai";
+  const id = createEngine9Id({ delegateUrl, storage: "session" });
+  const profileResult = document.getElementById("profile-result");
+
+  function show(label: string, data: unknown) {
+    if (!profileResult) return;
+    profileResult.hidden = false;
+    profileResult.textContent = `${label}\n${JSON.stringify(data, null, 2)}`;
+  }
+
+  document.getElementById("identity-id-popup")?.addEventListener("click", async () => {
+    try {
+      const identity = await id.requestIdentity({ minLevel: 1, mode: "popup" });
+      if (!identity) return;
+      const token = sessionStorage.getItem("delegate_token");
+      if (token) {
+        window.location.assign(
+          `/auth/delegate?delegate_token=${encodeURIComponent(token)}`,
+        );
+      } else {
+        show("// @engine9/id popup", identity);
+      }
+    } catch (err) {
+      show("// @engine9/id popup failed", { error: String(err) });
+    }
+  });
+
+  document.getElementById("identity-probe")?.addEventListener("click", async () => {
+    try {
+      const identity = await id.requestIdentity({ minLevel: 0, mode: "popup" });
+      show("// @engine9/id identity (Level 0)", identity ?? { empty: true });
+    } catch (err) {
+      show("// @engine9/id failed", { error: String(err) });
+    }
   });
 </script>
 
@@ -293,6 +389,10 @@ profileBridgeUrl.searchParams.set("origin", Astro.url.origin);
   }
   @media (min-width: 520px) {
     .btn-row { grid-template-columns: 1fr 1fr; }
+    .option:first-child .btn-row { grid-template-columns: 1fr; }
+  }
+  @media (min-width: 720px) {
+    .option:first-child .btn-row { grid-template-columns: 1fr 1fr 1fr; }
   }
   .btn-row .btn { margin-top: 0; }
   .option-ghost { border-color: var(--border); }

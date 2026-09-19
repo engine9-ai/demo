@@ -87,13 +87,15 @@ The sibling `delegate` service uses this exact pattern for
 
 ## Production auth note
 
-The "Login as VIP" / "Login as Admin" buttons are a demo stand-in. In a real
-deployment, authentication is delegated to the shared **delegate** service
-(the sibling Worker at `delegate.engine9.ai`): the user authenticates there,
-and this site receives a verified `person_id` and entitlement level instead
-of letting the visitor pick a role. The gating middleware
-(`src/middleware.ts`) and the person_id-keyed queries would not change —
-only the code that establishes the session (`src/pages/auth/login.ts` and
-`src/lib/session.ts`) would be replaced with delegate's session verification.
-If you wire that up, sessions should also be signed or stored server-side
-(e.g. in KV, as delegate does) rather than trusted from a plain cookie.
+Authentication is already wired through the shared **delegate** service
+(`delegate.engine9.ai`). The preferred path is an Identity Token (JWT)
+from `GET /identity/authorize`, verified via JWKS in
+`@engine9/core/auth/delegate`. Legacy `delegate_code` / `delegate_bridge`
+still work when `DELEGATE_SHARED_SECRET` is set.
+
+Set `SESSION_SECRET` with `wrangler secret put SESSION_SECRET`. The
+shared handoff secret is optional for JWT login. After first login this
+demo still shows `/choose-role` (VIP needs Level 1, Admin Level 3); that
+picker is demo policy, not a Delegate feature.
+
+See [`docs/identity-flow.md`](docs/identity-flow.md).
