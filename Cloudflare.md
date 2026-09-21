@@ -1,5 +1,9 @@
 # Deploying to Cloudflare Workers + D1
 
+This file is **this festival site**. For a new website, follow
+[`core/docs/deploy.md`](../core/docs/deploy.md) (Cloudflare and D1 section).
+Browser-only identity, no D1: [`id/docs/deploy.md`](../id/docs/deploy.md).
+
 This site is an Astro app served entirely by a single Cloudflare Worker, with
 a D1 database (Cloudflare's hosted SQLite) as the primary data store. The
 same code and the same SQL run locally and in production — locally the

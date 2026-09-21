@@ -134,7 +134,7 @@ curl localhost:8787/api/ok
 # create a person through the transform pipeline
 curl -X POST localhost:8787/api/people -H "Authorization: Bearer $KEY" \
   -H 'Content-Type: application/json' \
-  -d '{"people":[{"email":"new@example.com","given_name":"New","family_name":"Person"}]}'
+  -d '{"people":[{"email":"new@example.com","email_type":"Personal","given_name":"New","family_name":"Person"}]}'
 # gated read: denied until the person joins the segment
 curl "localhost:8787/api/read/vip-performances?person_id=901" -H "Authorization: Bearer $KEY"
 # grant VIP via a person_segment upsert, then the read succeeds

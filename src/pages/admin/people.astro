@@ -5,22 +5,32 @@ import { getDB } from "../../lib/db";
 const db = getDB();
 const { results: people } = await db
   .prepare(
-    `SELECT p.id AS person_id,
-            trim(p.given_name || ' ' || p.family_name) AS name,
+    `SELECT p.id,
+            p.given_name,
+            p.family_name,
             pe.email,
+            pe.email_type,
             p.created_at
      FROM person p
      LEFT JOIN person_email pe ON pe.person_id = p.id
      ORDER BY p.id, pe.preference_order`
   )
-  .all<{ person_id: number; name: string; email: string | null; created_at: string }>();
+  .all<{
+    id: number;
+    given_name: string | null;
+    family_name: string | null;
+    email: string | null;
+    email_type: string | null;
+    created_at: string;
+  }>();
 ---
 
 <Layout title="Admin · People">
   <p class="kicker">Admin only · gated server-side</p>
   <h1>Registered <span class="gradient-text">people</span></h1>
   <p class="muted">
-    Everyone in the <code>person</code> table, joined to <code>person_email</code>.
+    Columns match <code>@engine9/interfaces</code>
+    (<code>person</code> + <code>person_email</code>).
     New sign-ups from <a href="/register">/register</a> flow through
     <code>POST /api/people</code>.
   </p>
@@ -29,21 +39,25 @@ const { results: people } = await db
     <table>
       <thead>
         <tr>
-          <th>person_id</th>
-          <th>Name</th>
-          <th>Email</th>
+          <th>id</th>
+          <th>given_name</th>
+          <th>family_name</th>
+          <th>email</th>
+          <th>email_type</th>
           <th>Created</th>
         </tr>
       </thead>
       <tbody>
         {people.length === 0 ? (
-          <tr><td colspan="4" class="muted">No people yet.</td></tr>
+          <tr><td colspan="6" class="muted">No people yet.</td></tr>
         ) : (
           people.map((row) => (
             <tr>
-              <td>{row.person_id}</td>
-              <td>{row.name}</td>
+              <td>{row.id}</td>
+              <td>{row.given_name ?? <span class="muted">—</span>}</td>
+              <td>{row.family_name ?? <span class="muted">—</span>}</td>
               <td>{row.email ?? <span class="muted">—</span>}</td>
+              <td>{row.email_type ?? <span class="muted">—</span>}</td>
               <td>{row.created_at}</td>
             </tr>
           ))

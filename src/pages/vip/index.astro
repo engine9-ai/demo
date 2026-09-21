@@ -12,10 +12,12 @@ const db = getDB();
 // interface tables managed by @engine9/core.
 const person = await db
   .prepare(
-    `SELECT p.id AS person_id,
-            trim(p.given_name || ' ' || p.family_name) AS name,
+    `SELECT p.id,
+            p.given_name,
+            p.family_name,
             pe.email,
-            pa.street_1 AS address
+            pe.email_type,
+            pa.street_1
      FROM person p
      LEFT JOIN person_email pe ON pe.person_id = p.id
      LEFT JOIN person_address pa ON pa.person_id = p.id
@@ -42,11 +44,13 @@ const { results: vipSets } = await db
      ORDER BY CASE p.day WHEN 'Saturday' THEN 0 ELSE 1 END, p.start_time`
   )
   .all<Performance>();
+
+const displayGiven = person?.given_name?.trim() || null;
 ---
 
 <Layout title="VIP Lounge">
   <p class="kicker">VIP only · gated server-side</p>
-  <h1>Welcome to the <span class="gradient-text">VIP Lounge</span>{person?.name ? `, ${person.name.split(" ")[0]}` : ""}</h1>
+  <h1>Welcome to the <span class="gradient-text">VIP Lounge</span>{displayGiven ? `, ${displayGiven}` : ""}</h1>
   <p class="muted">
     Everything on this page is invisible to general admission — the VIP-only
     sets below aren't even included in the public schedule query.
@@ -58,10 +62,12 @@ const { results: vipSets } = await db
       {person ? (
         <table>
           <tbody>
-            <tr><th>person_id</th><td>{person.person_id}</td></tr>
-            <tr><th>Name</th><td>{person.name}</td></tr>
-            <tr><th>Email</th><td>{person.email ?? session.email}</td></tr>
-            <tr><th>Address</th><td>{person.address}</td></tr>
+            <tr><th>id</th><td>{person.id}</td></tr>
+            <tr><th>given_name</th><td>{person.given_name ?? "—"}</td></tr>
+            <tr><th>family_name</th><td>{person.family_name ?? "—"}</td></tr>
+            <tr><th>email</th><td>{person.email ?? session.email ?? "—"}</td></tr>
+            <tr><th>email_type</th><td>{person.email_type ?? "—"}</td></tr>
+            <tr><th>street_1</th><td>{person.street_1 ?? "—"}</td></tr>
             <tr>
               <th>Sign-in</th>
               <td>

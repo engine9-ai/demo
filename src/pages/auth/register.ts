@@ -1,29 +1,25 @@
 import type { APIRoute } from "astro";
 import { createEngine9Api, DEMO_PUBLIC_API_KEY } from "../../lib/engine9";
 
-function splitName(name: string) {
-  const trimmed = name.trim();
-  const space = trimmed.indexOf(" ");
-  if (space <= 0) return { given_name: trimmed, family_name: "" };
-  return {
-    given_name: trimmed.slice(0, space),
-    family_name: trimmed.slice(space + 1).trim(),
-  };
-}
+const EMAIL_TYPES = new Set(["Personal", "Work", "Other"]);
 
 /**
  * Registration handler. Forwards the form to POST /api/people server-side so
- * the API key never reaches the browser.
+ * the API key never reaches the browser. Field names match
+ * `@engine9/interfaces` person + person_email.
  */
 export const POST: APIRoute = async ({ request, redirect }) => {
   const form = await request.formData();
-  const name = String(form.get("name") ?? "").trim();
+  const given_name = String(form.get("given_name") ?? "").trim();
+  const family_name = String(form.get("family_name") ?? "").trim();
   const email = String(form.get("email") ?? "").trim().toLowerCase();
+  const email_type_raw = String(form.get("email_type") ?? "Personal").trim();
+  const email_type = EMAIL_TYPES.has(email_type_raw) ? email_type_raw : "";
 
-  if (!name) return redirect("/register?error=name", 303);
+  if (!given_name) return redirect("/register?error=given_name", 303);
   if (!email || !email.includes("@")) return redirect("/register?error=email", 303);
+  if (!email_type) return redirect("/register?error=email_type", 303);
 
-  const { given_name, family_name } = splitName(name);
   const api = createEngine9Api();
   const apiRequest = new Request("http://localhost/api/people", {
     method: "POST",
@@ -32,7 +28,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      people: [{ given_name, family_name, email }],
+      people: [{ given_name, family_name, email, email_type }],
     }),
   });
 

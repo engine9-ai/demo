@@ -1,6 +1,11 @@
 /**
  * Role registry keyed by segment UUID (role_id === segment_id).
  * Display names are site policy only — not defined by core or Delegate.
+ *
+ * This is the **segment-role** form of the same `requiredAuth` shape used by
+ * **declared roles** in `@engine9/id` (see id/docs/declared-roles.md and
+ * id-demo). Soft declared roles personalize the browser; these entries enforce
+ * scopes + minLevel on the server via core.
  */
 
 /** getPluginUUID('engine9.demo', 'festival-website') -- seeded in 0003_engine9.sql */

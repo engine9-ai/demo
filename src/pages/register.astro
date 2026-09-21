@@ -11,7 +11,9 @@ const personId = Astro.url.searchParams.get("person_id");
     <div class="card register-card">
       <h1>Register</h1>
       <p class="muted">
-        Sign up with your name and email. This is a Level 1 public form:
+        Sign up with interface field names
+        (<code>given_name</code>, <code>family_name</code>, <code>email</code>,
+        <code>email_type</code>). This is a Level 1 public form:
         <code>POST /api/people</code> uses an <code>e9publickey_</code>
         (scope <code>public</code> + <code>people:write</code>), not the
         private demo key.
@@ -25,18 +27,30 @@ const personId = Astro.url.searchParams.get("person_id");
 
       {error && (
         <p class="notice err">
-          Registration failed{error === "name" ? ": enter your name" : error === "email" ? ": enter a valid email" : `: ${error}`}.
+          Registration failed{error === "given_name" ? ": enter your given name" : error === "email" ? ": enter a valid email" : error === "email_type" ? ": choose a valid email_type" : `: ${error}`}.
         </p>
       )}
 
       <form method="post" action="/auth/register">
         <div class="field">
-          <label for="name">Name</label>
-          <input id="name" name="name" type="text" required autocomplete="name" placeholder="Alex Rivera" />
+          <label for="given_name">Given name</label>
+          <input id="given_name" name="given_name" type="text" required autocomplete="given-name" placeholder="Alex" />
+        </div>
+        <div class="field">
+          <label for="family_name">Family name</label>
+          <input id="family_name" name="family_name" type="text" autocomplete="family-name" placeholder="Rivera" />
         </div>
         <div class="field">
           <label for="email">Email</label>
           <input id="email" name="email" type="email" required autocomplete="email" placeholder="alex@example.com" />
+        </div>
+        <div class="field">
+          <label for="email_type">Email type</label>
+          <select id="email_type" name="email_type" required>
+            <option value="Personal" selected>Personal</option>
+            <option value="Work">Work</option>
+            <option value="Other">Other</option>
+          </select>
         </div>
         <button class="btn btn-primary" type="submit">Register</button>
       </form>
@@ -50,22 +64,19 @@ const personId = Astro.url.searchParams.get("person_id");
 
 <style>
   .register-wrap { display: flex; justify-content: center; padding-top: 2rem; }
-  .register-card { max-width: 28rem; }
-  .notice {
-    border-radius: 8px;
-    padding: 0.6rem 0.9rem;
-    margin: 0 0 1rem;
+  .register-card { max-width: 28rem; width: 100%; }
+  .field { margin-bottom: 1rem; }
+  .field label { display: block; font-weight: 600; margin-bottom: 0.35rem; }
+  .field input, .field select {
+    width: 100%;
+    padding: 0.55rem 0.65rem;
+    border-radius: 6px;
+    border: 1px solid var(--line, #ccc);
+    font: inherit;
   }
-  .notice.ok {
-    background: rgba(52, 211, 153, 0.12);
-    border: 1px solid rgba(52, 211, 153, 0.4);
-  }
-  .notice.err {
-    background: rgba(244, 114, 182, 0.12);
-    border: 1px solid rgba(244, 114, 182, 0.4);
-  }
-  form { margin-top: 1.25rem; }
-  .btn { width: 100%; margin-top: 0.5rem; }
-  .fine { margin-top: 1.5rem; font-size: 0.9rem; }
-  code { background: var(--surface-2); padding: 0.1rem 0.35rem; border-radius: 4px; }
+  .notice { padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; }
+  .notice.ok { background: color-mix(in srgb, var(--ok, #3d9a6a) 18%, transparent); }
+  .notice.err { background: color-mix(in srgb, var(--danger, #c45c5c) 18%, transparent); }
+  .fine { margin-top: 1rem; font-size: 0.9rem; }
+  code { background: var(--surface-2, #eee); padding: 0.1rem 0.35rem; border-radius: 4px; }
 </style>

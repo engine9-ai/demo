@@ -5,6 +5,12 @@ public site: anonymous visitors see the lineup, schedule, and ticket prices;
 VIPs get a members-only lounge page; admins get a management interface. Built
 with Astro, backed by SQLite, deployable to Cloudflare Workers + D1.
 
+This repo is the **with-core** example. Browser-only identity (no database)
+is [`id-demo`](../id-demo). First-time deploy writeups:
+[id](../id/docs/deploy.md) and [core](../core/docs/deploy.md) (D1 steps in
+the core guide). Festival-specific Cloudflare notes stay in
+[`Cloudflare.md`](Cloudflare.md).
+
 ## Run it locally
 
 Requires Node.js 22+.

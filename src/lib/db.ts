@@ -70,10 +70,12 @@ export interface TicketType {
 }
 
 export interface Person {
-  person_id: number;
-  name: string;
+  id: number;
+  given_name: string | null;
+  family_name: string | null;
   email: string | null;
-  address: string | null;
+  email_type: string | null;
+  street_1: string | null;
 }
 
 export function formatPrice(cents: number): string {
