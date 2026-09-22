@@ -17,7 +17,7 @@ import {
 
 /**
  * Thin cookie glue around @engine9/core's delegate auth. All real logic --
- * code exchange, person dedupe (id_type "delegate"), role lookup from
+ * Identity Token verification, person dedupe (id_type "delegate"), role lookup from
  * person_segment, token signing/verification -- lives in core; this file only
  * moves the signed token in and out of the Astro cookie jar.
  *
@@ -55,7 +55,7 @@ export function clearSession(cookies: AstroCookies): void {
   cookies.delete("festival_session", { path: "/" });
 }
 
-/** Prefer the JWT `level`; infer from legacy handoff auth when missing. */
+/** Prefer the Identity Token `level`; infer from auth when an older session has none. */
 function inferredLevel(session: Session): number | undefined {
   if (typeof session.level === "number") return session.level;
   const auth = session.auth;

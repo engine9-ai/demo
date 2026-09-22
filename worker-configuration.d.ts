@@ -5,7 +5,6 @@ interface __BaseEnv_Env {
 	DB: D1Database;
 	ASSETS: Fetcher;
 	DELEGATE_URL: "https://delegate.engine9.ai";
-	DELEGATE_SHARED_SECRET: string;
 	SESSION_SECRET: string;
 }
 declare namespace Cloudflare {
@@ -16,7 +15,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "DELEGATE_URL" | "DELEGATE_SHARED_SECRET" | "SESSION_SECRET">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "DELEGATE_URL" | "SESSION_SECRET">> {}
 }
 
 // Begin runtime types

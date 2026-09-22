@@ -94,11 +94,9 @@ The sibling `delegate` service uses this exact pattern for
 Authentication is already wired through the shared **delegate** service
 (`delegate.engine9.ai`). The preferred path is an Identity Token (JWT)
 from `GET /identity/authorize`, verified via JWKS in
-`@engine9/core/auth/delegate`. Legacy `delegate_code` / `delegate_bridge`
-still work when `DELEGATE_SHARED_SECRET` is set.
+`@engine9/core/auth/delegate`.
 
-Set `SESSION_SECRET` with `wrangler secret put SESSION_SECRET`. The
-shared handoff secret is optional for JWT login. After first login this
+Set `SESSION_SECRET` with `wrangler secret put SESSION_SECRET`. After first login this
 demo still shows `/choose-role` (VIP needs Level 1, Admin Level 3); that
 picker is demo policy, not a Delegate feature.
 

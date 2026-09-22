@@ -4,7 +4,7 @@
  *
  * This is the **segment-role** form of the same `requiredAuth` shape used by
  * **declared roles** in `@engine9/id` (see id/docs/declared-roles.md and
- * id-demo). Soft declared roles personalize the browser; these entries enforce
+ * demo-id). Soft declared roles personalize the browser; these entries enforce
  * scopes + minLevel on the server via core.
  */
 

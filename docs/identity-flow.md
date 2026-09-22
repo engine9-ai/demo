@@ -7,7 +7,7 @@ and `@engine9/id`. Protocol: [`id/docs/protocol.md`](../../id/docs/protocol.md).
 
 **Segment roles** (hard gates) are defined in `src/lib/roles.ts` /
 `src/lib/engine9.ts`. Same `requiredAuth` shape as **declared roles** in
-[`@engine9/id`](../../id/docs/declared-roles.md) / [`id-demo`](../../id-demo)
+[`@engine9/id`](../../id/docs/declared-roles.md) / [`demo-id`](../../demo-id)
 — those are soft UI only until you map them to `person_segment`.
 
 - **VIP** — segment `5f2ab45c-0a39-4939-a2af-c1fcc58f37ff`, scopes
@@ -42,8 +42,6 @@ sequenceDiagram
   S-->>B: personId, roles, level
 ```
 
-Legacy `delegate_code` / `delegate_bridge` still work on the same callback.
-
 ## Client vs server
 
 - `@engine9/id` on `/login`: Identity Token popup (`requestIdentity`),
@@ -55,4 +53,4 @@ Legacy `delegate_code` / `delegate_bridge` still work on the same callback.
   `e9publickey_` (`public` + `people:write`). The private `e9key_` stays
   server-only for admin-style API calls.
 
-Browser-only on-ramp (no core): [`id-demo`](../../id-demo).
+Browser-only on-ramp (no core): [`demo-id`](../../demo-id).

@@ -44,7 +44,6 @@ export function delegateAuth() {
   return createDelegateAuth({
     worker: createPersonWorker(),
     delegateUrl: env.DELEGATE_URL || "https://delegate.engine9.ai",
-    handoffSecret: env.DELEGATE_SHARED_SECRET,
     sessionSecret: env.SESSION_SECRET,
     pluginId: FESTIVAL_PLUGIN_ID,
     remoteInputId: "delegate-login",

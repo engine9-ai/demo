@@ -6,7 +6,7 @@ VIPs get a members-only lounge page; admins get a management interface. Built
 with Astro, backed by SQLite, deployable to Cloudflare Workers + D1.
 
 This repo is the **with-core** example. Browser-only identity (no database)
-is [`id-demo`](../id-demo). First-time deploy writeups:
+is [`demo-id`](../demo-id). First-time deploy writeups:
 [id](../id/docs/deploy.md) and [core](../core/docs/deploy.md) (D1 steps in
 the core guide). Festival-specific Cloudflare notes stay in
 [`Cloudflare.md`](Cloudflare.md).
@@ -60,8 +60,8 @@ This site only wires config and HTTP endpoints:
 
 | Endpoint | Purpose |
 | --- | --- |
-| `GET /login` | Identity Token (`/identity/authorize`) plus legacy handoff options |
-| `GET /auth/delegate` | Callback: Identity Token (`?delegate_token=`), or legacy `?delegate_code=` / `?delegate_bridge=` |
+| `GET /login` | Identity Token (`/identity/authorize`) |
+| `GET /auth/delegate` | Callback: Identity Token (`?delegate_token=`) |
 | `POST /auth/role` | Demo-only: grants VIP or Admin after first login |
 | `GET /choose-role` | First-time users pick VIP or Admin |
 | `POST /auth/logout` (or site logout) | Clears the local session cookie |
@@ -69,7 +69,7 @@ This site only wires config and HTTP endpoints:
 `src/middleware.ts` reads the session on every request and redirects to
 `/login` (or `/choose-role`) before any gated page renders.
 
-For how delegate handoff, person resolution, roles-as-segments, and signed
+For how Identity Tokens, person resolution, roles-as-segments, and signed
 sessions work, see [`@engine9/core` README — Delegate
 authentication](../core/README.md#delegate-authentication).
 
@@ -83,14 +83,8 @@ authentication](../core/README.md#delegate-authentication).
 Identity flow: [`docs/identity-flow.md`](docs/identity-flow.md).
 
 Local development: copy `.env.example` to `.env`. `SESSION_SECRET` is required.
-`DELEGATE_SHARED_SECRET` is optional when using Identity Tokens (JWT); still
-needed for legacy handoff. Point `DELEGATE_URL` at `https://delegate.engine9.ai`.
-
-For `localhost` / `127.0.0.1` callbacks, Delegate returns a signed
-`?delegate_bridge=` token in the browser (Bot Fight cannot challenge that
-path). If an older `?delegate_code=` still lands here and server exchange is
-blocked, `/login` shows a **Continue sign-in on Delegate** link through
-`/handoff/browser-exchange`.
+Point `DELEGATE_URL` at `https://delegate.engine9.ai`. The callback is
+`?delegate_token=` (`response_mode=query`).
 
 ## How it's put together
 

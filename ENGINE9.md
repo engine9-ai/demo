@@ -162,10 +162,9 @@ Login is provided by the shared **delegate** deployment via
 config and endpoints:
 
 - `src/lib/roles.ts` — VIP (`minLevel: 1`) and Admin (`minLevel: 3`)
-- `src/lib/engine9.ts` — `delegateAuth()` config (delegate URL, optional
-  shared secret, session secret, plugin id, role registry)
-- `GET /auth/delegate` — callback: Identity Token (`?delegate_token=`) or
-  legacy `?delegate_code=` / `?delegate_bridge=`
+- `src/lib/engine9.ts` — `delegateAuth()` config (delegate URL, session
+  secret, plugin id, role registry)
+- `GET /auth/delegate` — callback: Identity Token (`?delegate_token=`)
 - `POST /auth/role` + `/choose-role` — demo-only first-login role picker
 - `src/middleware.ts` — gates `/vip` and `/admin` from the session
 
@@ -173,9 +172,8 @@ See [`@engine9/core` README — Delegate
 authentication](../core/README.md#delegate-authentication) and
 [`docs/identity-flow.md`](docs/identity-flow.md).
 
-`SESSION_SECRET` is required. `DELEGATE_SHARED_SECRET` is optional when
-using Identity Tokens; still needed for legacy handoff. `DELEGATE_URL` is
-a wrangler var (`https://delegate.engine9.ai`).
+`SESSION_SECRET` is required. `DELEGATE_URL` is a wrangler var
+(`https://delegate.engine9.ai`).
 
 ### Stage 9 — Identity Tokens and `@engine9/id`
 
@@ -185,8 +183,7 @@ the same `/auth/delegate` callback. Registration uses the seeded
 `e9publickey_` on `POST /people`.
 
 `auth.identityUrl({ returnTo, minLevel, responseMode: "query" })` builds
-the authorize URL. `loginUrl()` remains the legacy `/handoff/authorize`
-path.
+the authorize URL.
 
 ## What stays on the engine9 server
 

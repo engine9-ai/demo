@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import {
   createDelegateLoginFailure,
+  domainFromUrl,
   normalizeDelegateLoginFailure,
 } from "@engine9/core/auth/delegate";
 import type { DelegateLoginFailure } from "@engine9/core/auth/delegate";
@@ -15,42 +16,28 @@ function loginFailureRedirect(failure: DelegateLoginFailure) {
   if (failure.message && failure.message !== failure.userMessage) {
     params.set("detail", failure.message);
   }
-  if (failure.browserExchangeUrl) {
-    params.set("continue", failure.browserExchangeUrl);
-  }
   return `/login?${params}`;
 }
 
 /**
- * Delegate callback. Lands here from:
- *   - /handoff/authorize with ?delegate_code= (production server exchange), or
- *   - /handoff/authorize with ?delegate_bridge= (localhost signed bridge), or
- *   - /handoff/browser-exchange with ?delegate_bridge= (local-dev continue step)
+ * Identity Token callback. Lands here from `/identity/authorize` with
+ * `?delegate_token=` (`response_mode=query`).
  *
- * Core verifies the bridge or exchanges the code, runs person dedupe, and
- * returns a signed session. On Cloudflare Bot Fight blocking the exchange,
- * we send the developer back to /login with a continue URL to finish in-browser.
+ * Core verifies the JWT, runs person dedupe, and returns a signed session.
  */
 export const GET: APIRoute = async ({ url, cookies, redirect }) => {
   const identityToken = url.searchParams.get("delegate_token");
-  const code = url.searchParams.get("delegate_code");
-  const bridge = url.searchParams.get("delegate_bridge");
   const returnTo = new URL("/auth/delegate", url.origin).toString();
 
   let session: Session;
   try {
-    if (identityToken) {
-      ({ session } = await delegateAuth().login(identityToken, {
-        returnTo,
-        site: url.origin,
-      }));
-    } else if (bridge) {
-      ({ session } = await delegateAuth().login(bridge, { returnTo }));
-    } else if (code) {
-      ({ session } = await delegateAuth().login(code, { returnTo }));
-    } else {
-      throw createDelegateLoginFailure("missing_delegate_code");
+    if (!identityToken) {
+      throw createDelegateLoginFailure("invalid_identity_token");
     }
+    ({ session } = await delegateAuth().login(identityToken, {
+      returnTo,
+      domain: domainFromUrl(url.origin),
+    }));
   } catch (e) {
     console.error("delegate login failed", e);
     const failure = normalizeDelegateLoginFailure(e);
