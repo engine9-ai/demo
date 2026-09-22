@@ -11,6 +11,9 @@ is [`demo-id`](../demo-id). First-time deploy writeups:
 the core guide). Festival-specific Cloudflare notes stay in
 [`Cloudflare.md`](Cloudflare.md).
 
+This repository is [MIT licensed](./LICENSE). Use, copy, modify, and
+distribute this code as-is.
+
 ## Run it locally
 
 Requires Node.js 22+.
@@ -116,3 +119,7 @@ person-related upserts, and segment-gated content reads. See
 
 See [Cloudflare.md](./Cloudflare.md) for deploying to Cloudflare Workers with
 a D1 database.
+
+## License
+
+[MIT](./LICENSE). Use, copy, modify, and distribute this code as-is.

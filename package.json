@@ -4,6 +4,7 @@
   "type": "module",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "dev": "npm run db:migrate && node --env-file-if-exists=.env ./node_modules/astro/bin/astro.mjs dev",
     "build": "astro build",
