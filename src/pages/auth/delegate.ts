@@ -5,7 +5,7 @@ import {
   normalizeDelegateLoginFailure,
 } from "@engine9/core/auth/delegate";
 import type { DelegateLoginFailure } from "@engine9/core/auth/delegate";
-import { delegateAuth } from "../../lib/engine9";
+import { delegateAuth, ensureStandardPlugins } from "../../lib/engine9";
 import { setSession, needsRole, isAdmin, type Session } from "../../lib/session";
 
 function loginFailureRedirect(failure: DelegateLoginFailure) {
@@ -34,6 +34,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect }) => {
     if (!identityToken) {
       throw createDelegateLoginFailure("invalid_identity_token");
     }
+    await ensureStandardPlugins();
     ({ session } = await delegateAuth().login(identityToken, {
       returnTo,
       domain: domainFromUrl(url.origin),

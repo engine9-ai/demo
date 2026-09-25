@@ -33,14 +33,14 @@ npm run dev
 ```
 
 Build `@engine9/id` (`cd ../id && npm run build`) before `npm install` here
-if `dist/` is missing. After the packages are published, switch those
-entries to version ranges.
+if `dist/` is missing. These checkouts are release 1.3.0. After the packages
+are published, switch those entries to `"^1.3.0"`.
 
 Open **http://localhost:3000** (or **http://localhost:3001** /
 **http://localhost:3002** if 3000 is taken). Set `PORT` in `.env` to pin a
 port (e.g. `PORT=3001`); run `npx astro dev stop` before restarting if the port
 changed. Ports 3000–3002 are the allowed `return_to` origins for local
-development (see `ALLOWED_RETURN_ORIGINS` on the delegate Worker).
+development (see `ALLOWED_DOMAINS` on the delegate Worker).
 The dev script first applies the SQL migrations in `migrations/` to a local
 SQLite database (stored under `.wrangler/state/`), seeding the five acts, the
 schedule, ticket types, and two demo people. `npm run db:reset` wipes it back
@@ -74,7 +74,7 @@ This site only wires config and HTTP endpoints:
 
 For how Identity Tokens, person resolution, roles-as-segments, and signed
 sessions work, see [`@engine9/core` README — Delegate
-authentication](../core/README.md#delegate-authentication).
+authentication](../core/README.md#authentication).
 
 ### Roles
 

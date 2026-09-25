@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import PersonWorker from "@engine9/core/PersonWorker";
+import plugins from "@engine9/core/plugins/site";
 import { SqlApiKeyStore } from "@engine9/core/auth";
 import { createDelegateAuth } from "@engine9/core/auth/delegate";
 import { BatchLogger } from "@engine9/core/logging";
@@ -29,16 +30,44 @@ import {
  * people writes, person-related upserts, and segment-gated reads under /api.
  */
 
-/** The PersonWorker runs the full inbound person pipeline against D1. */
+/**
+ * The PersonWorker runs the inbound person pipeline against D1.
+ * `plugins` is the registry compiled into this build (`@engine9/core/plugins/site`,
+ * every `@engine9/interfaces` plugin). Core loads plugin code from that registry.
+ */
 export function createPersonWorker() {
-  return new PersonWorker({ accountId: "festival-demo", d1: env.DB });
+  return new PersonWorker({ accountId: "festival-demo", d1: env.DB, plugins });
+}
+
+let standardPlugins: Promise<void> | undefined;
+
+/**
+ * Install the published person interfaces (plugin rows + inbound snapshots)
+ * once per isolate. The seeded `@demo/festival-website` row is attribution
+ * for writes; it is not an inbound people plugin. `POST /people` and login
+ * need the standard interfaces installed.
+ */
+export function ensureStandardPlugins(): Promise<void> {
+  if (!standardPlugins) {
+    const worker = createPersonWorker();
+    standardPlugins = worker
+      .installStandard()
+      .then(() => undefined)
+      .catch((err: unknown) => {
+        standardPlugins = undefined;
+        throw err;
+      });
+  }
+  return standardPlugins;
 }
 
 /**
  * All delegate login/session/role logic lives in @engine9/core; this is pure
  * configuration: which delegate to trust, which secrets to use, which plugin
  * records the logins, which segments count as roles, and that demo roles are
- * session-scoped (re-prompted every login).
+ * session-scoped (re-prompted every login). `createApi({ delegate })` is the
+ * default when those extras are not needed; this demo passes `delegateAuth`
+ * so `loadRolesOnLogin` stays false.
  */
 export function delegateAuth() {
   return createDelegateAuth({

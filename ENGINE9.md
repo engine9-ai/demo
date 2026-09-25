@@ -31,13 +31,15 @@ the same sequence to install the client on any existing site.
 npm install @engine9/core
 ```
 
-`package.json` currently uses `"@engine9/core": "github:engine9-ai/core"` so
-installs work before the package is on npm; switch to `"^0.1.0"` once it is
-published. `overrides` pin transitive `@engine9/input-tools` and
-`@engine9/interfaces` until those packages are published with registry deps
-(push the updated `core` and `interfaces` repos first). To develop against a
-local `core` checkout, run `npm link @engine9/core` after linking from
-`../core` — see the README.
+`package.json` depends on the sibling checkouts at 1.3.0:
+
+```json
+"@engine9/core": "file:../core",
+"@engine9/id": "file:../id"
+```
+
+After the packages are published, switch those entries to `"^1.3.0"`.
+`overrides` pin transitive `@engine9/input-tools` and `@engine9/interfaces`.
 
 Bundler wiring for Cloudflare lives in `astro.config.mjs`:
 
@@ -56,7 +58,7 @@ else was needed.
 Generate the DDL with the client (no server required):
 
 ```bash
-npx e9 sqlite-ddl --schema @engine9/interfaces/person > engine9-ddl.sql
+npx e9core sqlite-ddl --schema @engine9/interfaces/person > engine9-ddl.sql
 ```
 
 That DDL (idempotent `create table if not exists`) is the middle section of
@@ -93,7 +95,7 @@ Also in `0003_engine9.sql`:
 
   ```bash
   # prints the key once (stderr) and the INSERT statement (stdout)
-  npx e9 create-api-key --print-sql --name my-website \
+  npx e9core create-api-key --print-sql --name my-website \
     --scopes people:write,tables:write,data:read > new-key.sql
   npx wrangler d1 execute festival-db --remote --file new-key.sql
   # deactivate the demo key
@@ -112,10 +114,13 @@ Also in `0003_engine9.sql`:
 Two small files:
 
 - `src/lib/engine9.ts` — builds the client: `PersonWorker` on the `DB` D1
-  binding, `SqlApiKeyStore` (swap for `KVApiKeyStore` + a KV namespace without
+  binding with the compiled plugin registry (`@engine9/core/plugins/site`),
+  `SqlApiKeyStore` (swap for `KVApiKeyStore` + a KV namespace without
   touching endpoints), `BatchLogger`, and `createApi` with this site's plugin
   id, upsertable tables, and named reads (`vip-performances` gated by the VIP
-  segment, `lineup` public).
+  segment, `lineup` public). The first people write or login calls
+  `installStandard()` so the published person interfaces (the inbound
+  pipeline) are installed. Core runs only plugins compiled into the build.
 - `src/pages/api/[...path].ts` — Astro catch-all route that hands the raw
   `Request` to `api.handleFetch`. On a plain Worker (no Astro) you'd call
   `handleFetch` from `fetch()` directly — see
@@ -169,7 +174,7 @@ config and endpoints:
 - `src/middleware.ts` — gates `/vip` and `/admin` from the session
 
 See [`@engine9/core` README — Delegate
-authentication](../core/README.md#delegate-authentication) and
+authentication](../core/README.md#authentication) and
 [`docs/identity-flow.md`](docs/identity-flow.md).
 
 `SESSION_SECRET` is required. `DELEGATE_URL` is a wrangler var
@@ -180,7 +185,7 @@ authentication](../core/README.md#delegate-authentication) and
 Preferred login is `GET /identity/authorize` (JWT, public JWKS). The login
 page also uses `@engine9/id` for a popup (`requestIdentity`) that lands on
 the same `/auth/delegate` callback. Registration uses the seeded
-`e9publickey_` on `POST /people`.
+`e9publickey_` (scope `public`) on `POST /people`.
 
 `auth.identityUrl({ returnTo, minLevel, responseMode: "query" })` builds
 the authorize URL.

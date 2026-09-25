@@ -5,6 +5,6 @@ VALUES (
   'a7e4d2c1-8b90-4f12-9e3a-1c5d7b9e0f22',
   'festival-demo-public',
   '27beb93d006eb5287847fb912e25a7d5390159db3b2de23d6786e814b639a7de',
-  '["public","people:write"]',
+  '["public"]',
   1
 );

@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { createEngine9Api, DEMO_PUBLIC_API_KEY } from "../../lib/engine9";
+import { createEngine9Api, DEMO_PUBLIC_API_KEY, ensureStandardPlugins } from "../../lib/engine9";
 
 const EMAIL_TYPES = new Set(["Personal", "Work", "Other"]);
 
@@ -20,6 +20,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   if (!email || !email.includes("@")) return redirect("/register?error=email", 303);
   if (!email_type) return redirect("/register?error=email_type", 303);
 
+  await ensureStandardPlugins();
   const api = createEngine9Api();
   const apiRequest = new Request("http://localhost/api/people", {
     method: "POST",

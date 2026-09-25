@@ -325,7 +325,7 @@ when NEW.modified_at is OLD.modified_at
 begin
   update "transaction" set modified_at = CURRENT_TIMESTAMP where rowid = NEW.rowid;
 end;
--- @engine9/interfaces/transaction/profile
+-- @engine9/interfaces/transaction/contact_details
 create table if not exists "transaction" (
   "street_1" varchar(255),
   "street_2" varchar(255),

@@ -16,7 +16,7 @@ export const VIP_SEGMENT_ID = "5f2ab45c-0a39-4939-a2af-c1fcc58f37ff";
 export const ADMIN_SEGMENT_ID = "4f4ac886-f53d-48e1-b4bd-5a98eb48cc6f";
 /** Private demo API key seeded in 0003_engine9.sql — server-side only */
 export const DEMO_API_KEY = "e9key_0ca7302713d70f5d130cf52cbf9167f0ea1a45ef";
-/** Public form key seeded in 0005_public_api_key.sql — `public` + `people:write` */
+/** Public form key seeded in 0005_public_api_key.sql — scope `public` only */
 export const DEMO_PUBLIC_API_KEY =
   "e9publickey_9f2c1a0b8d7e6f5a4c3b2d1e0f9a8b7c6d5e4f3a";
 

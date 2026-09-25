@@ -2,7 +2,7 @@
   "name": "solstice-wave-festival",
   "description": "Demo festival site: Astro + SQLite (Cloudflare D1) with VIP/Admin gating via a pretend delegate login",
   "type": "module",
-  "version": "0.1.0",
+  "version": "1.3.0",
   "private": true,
   "license": "MIT",
   "scripts": {

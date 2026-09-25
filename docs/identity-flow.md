@@ -50,7 +50,7 @@ sequenceDiagram
   middleware for `/vip` and `/admin` (also checks `requiredAuth.minLevel`).
 - Level 1 register: `/auth/register` → `POST /api/people` with
   `{ given_name, family_name, email, email_type }` and the seeded
-  `e9publickey_` (`public` + `people:write`). The private `e9key_` stays
+  `e9publickey_` (scope `public` only). The private `e9key_` stays
   server-only for admin-style API calls.
 
 Browser-only on-ramp (no core): [`demo-id`](../../demo-id).
